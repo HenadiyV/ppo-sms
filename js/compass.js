@@ -1,62 +1,86 @@
 export class Compass {
-  constructor(onUpdateCallback) {
-    this.onUpdate = onUpdateCallback; // Функция, которая будет обновлять экран
-    this.azimuth = 0;
-  }
+    constructor(onUpdateCallback, onErrorCallback) {
+        this.onUpdate = onUpdateCallback;       // Функция для вывода азимута
+        this.onError = onErrorCallback;         // Функция для вывода ошибок на экран
+        this.azimuth = 0;
+        this.hasActiveListener = false;
+    }
 
-  // Метод для запроса доступа к датчикам ориентации
-  async start() {
-    if (typeof DeviceOrientationEvent !== 'undefined') {
-      // Специальный запрос для iOS 13+
-      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-          const response = await DeviceOrientationEvent.requestPermission();
-          if (response === 'granted') {
-            this._initListener();
-          } else {
-            alert('Доступ до компасу відхилено!');
-          }
-        } catch (error) {
-          console.error(error);
-          alert('Помилка запиту доступу до датчиків.');
+    async start() {
+        // Проверяем наличие API в браузере
+        if (!window.DeviceOrientationEvent) {
+            this._sendError("Браузер не поддерживает датчики ориентации.");
+            return;
         }
-      } else {
-        // Для Android и старых iOS
-        this._initListener();
-      }
-    } else {
-      alert('Ваш пристрій не підтримує вимірювання азимуту.');
-    }
-  }
 
-  _initListener() {
-    window.addEventListener('deviceorientationabsolute', (e) => this._handleOrientation(e), true);
-    // Резервный слушатель, если абсолютная ориентация недоступна
-    window.addEventListener('deviceorientation', (e) => this._handleOrientation(e), true);
-  }
-
-  _handleOrientation(event) {
-    let heading = null;
-
-    // Для iOS (webkitCompassHeading показывает градусы от севера напрямую)
-    if (event.webkitCompassHeading) {
-      heading = event.webkitCompassHeading;
-    } 
-    // Для Android (используем alpha, если датчик откалиброван как абсолютный)
-    else if (event.alpha !== null) {
-      // Корректируем направление (360 - alpha)
-      heading = 360 - event.alpha;
+        // Запрос разрешения для iOS 13+
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            try {
+                const response = await DeviceOrientationEvent.requestPermission();
+                if (response === 'granted') {
+                    this._initListener();
+                } else {
+                    this._sendError("Доступ до датчиків відхилено користувачем.");
+                }
+            } catch (error) {
+                this._sendError("Помилка запиту дозволу на iOS: " + error.message);
+            }
+        } else {
+            // Для Android (включая Vivo) запуск происходит напрямую
+            this._initListener();
+        }
     }
 
-    if (heading !== null) {
-      this.azimuth = Math.round(heading);
-      if (this.onUpdate) {
-        this.onUpdate(this.azimuth);
-      }
-    }
-  }
+    _initListener() {
+        if (this.hasActiveListener) return;
 
-  getAzimuth() {
-    return this.azimuth;
-  }
+        // Для Android критически важно сначала пробовать absolute-версию события
+        if ('ondeviceorientationabsolute' in window) {
+            window.addEventListener('deviceorientationabsolute', (e) => this._handleOrientation(e), true);
+            this.hasActiveListener = true;
+        } else if ('ondeviceorientation' in window) {
+            // Резервный вариант, если absolute не поддерживается
+            window.addEventListener('deviceorientation', (e) => this._handleOrientation(e), true);
+            this.hasActiveListener = true;
+        } else {
+            this._sendError("Не вдалося підписатися на події датчиків.");
+        }
+    }
+
+    _handleOrientation(event) {
+        let heading = null;
+
+        // 1. Попытка для iOS
+        if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+            heading = event.webkitCompassHeading;
+        }
+        // 2. Попытка для Android (абсолютный азимут)
+        else if (event.absolute === true && event.alpha !== null) {
+            heading = 360 - event.alpha;
+        }
+        // 3. Резервная попытка для Android (может быть неточным без калибровки, но покажет хоть что-то)
+        else if (event.alpha !== null) {
+            heading = 360 - event.alpha;
+        }
+
+        if (heading !== null) {
+            this.azimuth = Math.round(heading);
+            if (this.onUpdate) {
+                this.onUpdate(this.azimuth);
+            }
+        } else {
+            this._sendError("Датчик повернув порожні дані (можливо, немає компаса в телефоні).");
+        }
+    }
+
+    getAzimuth() {
+        return this.azimuth;
+    }
+
+    _sendError(message) {
+        console.warn(message);
+        if (this.onError) {
+            this.onError(message);
+        }
+    }
 }
