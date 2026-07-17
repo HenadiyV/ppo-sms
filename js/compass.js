@@ -1,147 +1,161 @@
 export class Compass {
   /**
    * @param {Object} config - Конфігурація елементів інтерфейсу
-   * @param {string} config.startBtnId - ID кнопки увімкнення/вимкнення
-   * @param {string} config.displayId - ID текстового поля відображення градусів
+   * @param {string} config.displayId - ID текстового поля відображення градусів (загальний або опціональний)
    * @param {string} config.btnFixDetectId - ID кнопки фіксації азимуту виявлення
    * @param {string} config.btnFixCourseId - ID кнопки фіксації азимуту руху
    * @param {string} config.inputDetectId - ID інпуту результату азимуту виявлення
    * @param {string} config.inputCourseId - ID інпуту результату азимуту руху
    */
   constructor(config) {
-    // Зберігаємо елементи DOM
-    this.startBtn = document.getElementById(config.startBtnId);
     this.display = document.getElementById(config.displayId);
     this.btnFixDetect = document.getElementById(config.btnFixDetectId);
     this.btnFixCourse = document.getElementById(config.btnFixCourseId);
     this.inputDetect = document.getElementById(config.inputDetectId);
     this.inputCourse = document.getElementById(config.inputCourseId);
 
-    // Внутрішній стан компаса
+    // Стан для кожного напрямку: "idle" (очікування), "scanning" (активний пошук), "fixed" (зафіксовано)
+    this.states = {
+      detect: 'idle',
+      course: 'idle'
+    };
+
     this.currentAzimuth = 0;
-    this.isActive = false;
+    this.isSensorActive = false;
     this.deviceOrientationHandler = null;
 
     this._initEvents();
   }
 
-  // Приватний метод для ініціалізації кліків по кнопкам компаса
   _initEvents() {
-    // Перемикач компаса (Вкл/Выкл)
-    if (this.startBtn) {
-      this.startBtn.addEventListener('click', async () => {
-        if (!this.isActive) {
-          await this.start();
-        } else {
-          this.stop();
-        }
-      });
-    }
-
-    // Фіксація азимуту виявлення
+    // Обробка кнопки Азимуту Виявлення
     if (this.btnFixDetect && this.inputDetect) {
-      this.btnFixDetect.addEventListener('click', () => {
-        this.inputDetect.value = this.currentAzimuth;
+      this.btnFixDetect.addEventListener('click', async () => {
+        await this._handleButtonClick('detect', this.btnFixDetect, this.inputDetect, 'Виявлення');
       });
     }
 
-    // Фіксація азимуту руху
+    // Обробка кнопки Азимуту Курсу (Руху)
     if (this.btnFixCourse && this.inputCourse) {
-      this.btnFixCourse.addEventListener('click', () => {
-        this.inputCourse.value = this.currentAzimuth;
+      this.btnFixCourse.addEventListener('click', async () => {
+        await this._handleButtonClick('course', this.btnFixCourse, this.inputCourse, 'Курс');
       });
     }
   }
 
-  async start() {
-    if (typeof window === 'undefined') return;
+  // Загальний контролер для обох кнопок
+  async _handleButtonClick(type, buttonEl, inputEl, labelText) {
+    // 1. Якщо датчики ще взагалі не запущені — запускаємо їх при першому кліку
+    if (!this.isSensorActive) {
+      const started = await this._startSensors();
+      if (!started) return; // Якщо доступ відхилено — виходимо
+    }
 
-    this.display.textContent = 'Очікування датчиків...';
-    this.display.style.color = '#f39c12';
+    // 2. Керуємо станом конкретної кнопки
+    if (this.states[type] === 'idle' || this.states[type] === 'fixed') {
+      // Переводимо в режим сканування
+      this.states[type] = 'scanning';
+      this._updateButtonUI(buttonEl, 'scanning', labelText);
+      inputEl.style.backgroundColor = '#e8f8f5'; // Підсвічуємо інпут, який зараз оновлюється
+    } 
+    else if (this.states[type] === 'scanning') {
+      // Друге натискання — фіксуємо поточний азимут
+      this.states[type] = 'fixed';
+      inputEl.value = this.currentAzimuth;
+      inputEl.style.backgroundColor = ''; // Прибираємо підсвітку
+      this._updateButtonUI(buttonEl, 'fixed', labelText);
+      
+      // Якщо обидві кнопки зафіксовані або повернуті в idle, можна було б вимикати датчик, 
+      // але краще залишити його активним, щоб не запитувати дозвіл повторно.
+    }
+  }
 
-    // Обробник події орієнтації пристрою
+  // Запуск системних датчиків орієнтації
+  async _startSensors() {
+    if (typeof window === 'undefined') return false;
+
     this.deviceOrientationHandler = (event) => {
       let azimuth = 0;
       let isRelative = false;
 
-      // Спроба отримати абсолютний азимут (Android/Chrome)
       if (event.webkitCompassHeading !== undefined) {
         azimuth = Math.round(event.webkitCompassHeading);
       } else if (event.alpha !== null) {
-        // Якщо абсолютного немає, використовуємо альфа (відносний)
         azimuth = Math.round(360 - event.alpha);
         isRelative = true;
       }
 
       this.currentAzimuth = azimuth;
-      this._updateUI(azimuth, isRelative);
+      
+      // Миттєво оновлюємо інпути, які зараз перебувають у режимі сканування
+      this._streamToActiveInputs(azimuth, isRelative);
     };
 
     try {
-      // Запит дозволу для iOS 13+
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         const permission = await DeviceOrientationEvent.requestPermission();
         if (permission === 'granted') {
           window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
-          this._setUIActive(true);
+          this.isSensorActive = true;
+          return true;
         } else {
-          this._handleError('Доступ до датчиків відхилено');
+          this._handleGlobalError('Доступ відхилено');
+          return false;
         }
       } else {
-        // Для Android та старіших версій
         if ('ondeviceorientationabsolute' in window) {
           window.addEventListener('deviceorientationabsolute', this.deviceOrientationHandler, true);
         } else {
           window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
         }
-        this._setUIActive(true);
+        this.isSensorActive = true;
+        return true;
       }
     } catch (error) {
-      this._handleError(error.message || 'Помилка ініціалізації датчиків');
+      this._handleGlobalError(error.message || 'Помилка датчиків');
+      return false;
     }
   }
 
-  stop() {
-    if (this.deviceOrientationHandler) {
-      window.removeEventListener('deviceorientationabsolute', this.deviceOrientationHandler, true);
-      window.removeEventListener('deviceorientation', this.deviceOrientationHandler, true);
-    }
-    this._setUIActive(false);
-    this.currentAzimuth = 0;
-  }
+  // Стрімінг даних в реальному часі тільки в ті інпути, які зараз "сканують"
+  // Цей метод повністю замінює роботу старого екрану
+  _streamToActiveInputs(azimuth, isRelative) {
+    const suffix = isRelative ? '° (відн.)' : '°';
 
-  _updateUI(azimuth, isRelative) {
-    if (!this.display) return;
-    
-    if (isRelative) {
-      this.display.textContent = `${azimuth}° (відносний)`;
-      this.display.style.color = '#f39c12';
-    } else {
+    if (this.states.detect === 'scanning' && this.inputDetect) {
+      this.inputDetect.value = `${azimuth}${suffix}`;
+    }
+    if (this.states.course === 'scanning' && this.inputCourse) {
+      this.inputCourse.value = `${azimuth}${suffix}`;
+    }
+
+    // Якщо старий загальний дисплей все ще потрібен в HTML — оновлюємо і його
+    if (this.display) {
       this.display.textContent = `${azimuth}°`;
-      this.display.style.color = '#27ae60';
+      this.display.style.color = isRelative ? '#f39c12' : '#27ae60';
     }
   }
 
-  _setUIActive(active) {
-    this.isActive = active;
-    if (!this.startBtn || !this.display) return;
+  // Динамічна зміна кольору та тексту кнопок залежно від стану
+  _updateButtonUI(buttonEl, state, labelText) {
+    if (!buttonEl) return;
 
-    if (active) {
-      this.startBtn.textContent = 'Вимкнути компас';
-      this.startBtn.style.backgroundColor = '#c0392b';
-    } else {
-      this.startBtn.textContent = 'Увімкнути компас';
-      this.startBtn.style.backgroundColor = '#34495e';
-      this.display.textContent = '0°';
-      this.display.style.color = '#333';
+    if (state === 'scanning') {
+      buttonEl.textContent = `🛑 Фіксувати ${labelText}`;
+      buttonEl.style.backgroundColor = '#e74c3c'; // Червона (йде запис)
+      buttonEl.style.color = '#fff';
+    } else if (state === 'fixed') {
+      buttonEl.textContent = `🔄 Перезаписати ${labelText}`;
+      buttonEl.style.backgroundColor = '#27ae60'; // Зелена (успішно зафіксовано)
+      buttonEl.style.color = '#fff';
     }
   }
 
-  _handleError(errorMessage) {
+  _handleGlobalError(errorMessage) {
+    alert(`Помилка компаса: ${errorMessage}`);
     if (this.display) {
       this.display.textContent = `Помилка: ${errorMessage}`;
       this.display.style.color = '#e74c3c';
     }
-    this._setUIActive(false);
   }
 }

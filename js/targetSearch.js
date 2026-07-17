@@ -13,6 +13,10 @@ export class TargetSearch {
     this.clearBtn = document.getElementById('clear-target-search');
 
     this._initEvents();
+    // Подписываемся на обновление справочников
+document.addEventListener('directoryUpdated', () => {
+  this.filterAndRender(this.searchInput.value);
+});
   }
 
   // Запуск всех слушателей событий
@@ -108,4 +112,6 @@ export class TargetSearch {
     this.dropdown.style.display = 'none';
     this.clearBtn.style.display = 'block';
   }
+
+  
 }
