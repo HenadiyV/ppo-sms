@@ -1,42 +1,103 @@
-const CACHE_NAME = 'ppo-sms-v1';
+// Меняйте эту версию каждый раз, когда вносите изменения в код (например, "v1.1", "v1.2"...)
+const CACHE_NAME = 'ppo-tracker-v1.0'; 
+
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './js/app.js',
   './js/compass.js',
-  './js/report.js'
+  './js/report.js',
+  './js/directory.js',
+  './js/targetSearch.js'
 ];
 
-// Установка: кэшируем файлы
-self.addEventListener('install', (e) => {
-  e.waitUntil(
+// Установка: кэшируем новые файлы
+self.addEventListener('install', (event) => {
+  event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
-    })
+    }).then(() => self.skipWaiting()) // Активируем SW сразу без ожидания
   );
 });
 
-// Активация: удаляем старый кэш
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
+// Активация: чистим старый кэш предыдущих версий
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('Видаляємо старий кеш:', cache);
+            return caches.delete(cache);
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Немедленно берем под контроль все вкладки
   );
 });
 
-// Перехват запросов: сначала смотрим в кэш, если сети нет
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      return cachedResponse || fetch(e.request);
-    })
+// Запросы: сначала пробуем сеть, если сети нет — берем из кэша (Network-first)
+// Это идеальная стратегия для разработки: если интернет есть, изменения сразу видны
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Если запрос успешен, дублируем его в кэш
+        if (response.status === 200 && event.request.method === 'GET') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Офлайн-режим: достаем из кэша
+        return caches.match(event.request);
+      })
   );
 });
+// const CACHE_NAME = 'ppo-sms-v1';
+// const ASSETS = [
+//     './',
+//     './index.html',
+//     './manifest.json',
+//     './js/app.js',
+//     './js/compass.js',
+//     './js/report.js',
+//     './js/targetSearch.js'
+// ];
+
+// // Установка: кэшируем файлы
+// self.addEventListener('install', (e) => {
+//     e.waitUntil(
+//         caches.open(CACHE_NAME).then((cache) => {
+//             return cache.addAll(ASSETS);
+//         })
+//     );
+// });
+
+// // Активация: удаляем старый кэш
+// self.addEventListener('activate', (e) => {
+//     e.waitUntil(
+//         caches.keys().then((keys) => {
+//             return Promise.all(
+//                 keys.map((key) => {
+//                     if (key !== CACHE_NAME) {
+//                         return caches.delete(key);
+//                     }
+//                 })
+//             );
+//         })
+//     );
+// });
+
+// // Перехват запросов: сначала смотрим в кэш, если сети нет
+// self.addEventListener('fetch', (e) => {
+//     e.respondWith(
+//         caches.match(e.request).then((cachedResponse) => {
+//             return cachedResponse || fetch(e.request);
+//         })
+//     );
+// });

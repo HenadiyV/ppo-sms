@@ -1,122 +1,71 @@
 import { Compass } from './compass.js';
 import { generateReportText } from './report.js';
+import { TargetSearch } from './targetSearch.js';
 
-// Переменная для хранения текущего живого азимута с датчика
-let currentLiveAzimuth = 0;
-
-// 1. Инициализация компаса
-const azimuthDisplay = document.getElementById('azimuth-display');
-
-const compass = new Compass(
-    // Успешное обновление азимута (живые данные):
-    (azimuth, isRelative) => {
-        currentLiveAzimuth = azimuth; // Запоминаем текущий угол в переменную
-        if (isRelative) {
-            azimuthDisplay.textContent = `${azimuth}° (відносний)`;
-            azimuthDisplay.style.color = '#f39c12';
-        } else {
-            azimuthDisplay.textContent = `${azimuth}°`;
-            azimuthDisplay.style.color = '#27ae60';
-        }
-    },
-    // Вывод ошибки:
-    (errorMessage) => {
-        azimuthDisplay.textContent = `Помилка: ${errorMessage}`;
-        azimuthDisplay.style.color = '#e74c3c';
-    }
-);
-
-
-// Переменные состояния компаса
-
-let isCompassActive = false; // Отслеживаем, работает ли компас сейчас
-
-const startCompassBtn = document.getElementById('start-compass');
-
-// Логика кнопки включения/выключения
-startCompassBtn.addEventListener('click', async () => {
-    if (!isCompassActive) {
-        // Включаем компас
-        await compass.start();
-        isCompassActive = true;
-        startCompassBtn.textContent = 'Вимкнути компас';
-        startCompassBtn.style.backgroundColor = '#c0392b'; // Меняем цвет на красный
-    } else {
-        // Выключаем компас
-        compass.stop();
-        isCompassActive = false;
-        currentLiveAzimuth = 0;
-        startCompassBtn.textContent = 'Увімкнути компас';
-        startCompassBtn.style.backgroundColor = '#34495e'; // Возвращаем исходный цвет
-        azimuthDisplay.textContent = '0°';
-        azimuthDisplay.style.color = '#333';
-    }
-});
-
-// 2. Логика фиксации азимутов по кнопкам
-const inputDetect = document.getElementById('azimuth-detect');
-const inputCourse = document.getElementById('azimuth-course');
-
-document.getElementById('btn-fix-detect').addEventListener('click', () => {
-    inputDetect.value = currentLiveAzimuth;
-});
-
-document.getElementById('btn-fix-course').addEventListener('click', () => {
-    inputCourse.value = currentLiveAzimuth;
-});
-
-// 3. Автозаполнение текущих даты и времени при загрузке
+// Инициализация при загрузке страницы
 window.addEventListener('DOMContentLoaded', () => {
-    const now = new Date();
+  // 1. Запускаем интерактивный поиск целей
+  new TargetSearch();
 
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('report-time').value = `${hours}:${minutes}`;
+  // 2. Инициализируем компас и привязываем его к интерфейсу
+  new Compass({
+    startBtnId: 'start-compass',
+    displayId: 'azimuth-display',
+    btnFixDetectId: 'btn-fix-detect',
+    btnFixCourseId: 'btn-fix-course',
+    inputDetectId: 'azimuth-detect',
+    inputCourseId: 'azimuth-course'
+  });
 
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    document.getElementById('report-date').value = `${year}-${month}-${day}`;
+  // 3. Автозаполнение времени и даты
+  const now = new Date();
+  
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('report-time').value = `${hours}:${minutes}`;
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  document.getElementById('report-date').value = `${year}-${month}-${day}`;
 });
 
-// 4. Сборка итогового отчета
+// 4. Генерация отчета
 document.getElementById('generate-btn').addEventListener('click', () => {
-    const target = document.getElementById('target-select').value;
-    const detection = document.getElementById('detection-select').value;
-    const time = document.getElementById('report-time').value;
+  const target = document.getElementById('target-select').value;
+  const detection = document.getElementById('detection-select').value;
+  const time = document.getElementById('report-time').value;
+  
+  const rawDate = document.getElementById('report-date').value;
+  let formattedDate = '--.--.----';
+  if (rawDate) {
+    const [y, m, d] = rawDate.split('-');
+    formattedDate = `${d}.${m}.${y}`;
+  }
 
-    const rawDate = document.getElementById('report-date').value;
-    let formattedDate = '--.--.----';
-    if (rawDate) {
-        const [y, m, d] = rawDate.split('-');
-        formattedDate = `${d}.${m}.${y}`;
-    }
+  const isDestroyed = document.getElementById('is-destroyed').checked;
+  const azimuthDetect = document.getElementById('azimuth-detect').value;
+  const azimuthCourse = document.getElementById('azimuth-course').value;
 
-    const isDestroyed = document.getElementById('is-destroyed').checked;
+  const report = generateReportText({
+    target,
+    detection,
+    time,
+    date: formattedDate,
+    isDestroyed,
+    azimuthDetect,
+    azimuthCourse
+  });
 
-    // Берем зафиксированные значения из полей ввода
-    const azimuthDetect = inputDetect.value;
-    const azimuthCourse = inputCourse.value;
-
-    // Формируем текст отчета
-    const report = generateReportText({
-        target,
-        detection,
-        time,
-        date: formattedDate,
-        isDestroyed,
-        azimuthDetect,
-        azimuthCourse
-    });
-
-    document.getElementById('report-output').value = report;
+  document.getElementById('report-output').value = report;
 });
 
-// 5. Регистрация Service Worker для работы офлайн
+// 5. Офлайн-режим (Service Worker)
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-            .then(reg => console.log('Service Worker зарегистрирован!', reg))
-            .catch(err => console.error('Ошибка Service Worker', err));
-    });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => console.log('SW зарегистрирован!', reg))
+      .catch(err => console.error('Ошибка SW', err));
+  });
 }
+

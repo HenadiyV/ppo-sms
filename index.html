@@ -71,7 +71,7 @@
     Увімкнути компас
   </button>
   
-  <div class="compass-val" style="margin-bottom: 15px;">
+  <div class="compass-val" id="azimut-view" style="margin-bottom: 15px;">
     Поточний азимут: <span id="azimuth-display">0°</span>
   </div>
 
@@ -98,7 +98,7 @@
   </div>
 </div>
     <!-- Пример полей формы -->
-    <div class="form-group">
+    <!-- <div class="form-group">
       <label for="target-select">Ціль:</label>
       <select id="target-select">
         <option value="" disabled selected>Оберіть ціль...</option>
@@ -106,7 +106,51 @@
         <option value="Крилата ракета">Крилата ракета</option>
         <option value="Балістична ракета">Балістична ракета</option>
       </select>
+    </div> -->
+    <!-- ==============
+<div class="form-group">
+  <label for="target-select">Ціль:</label>
+  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+    <select id="target-select" style="flex: 1;"> -->
+      <!-- Опции будут добавлены динамически через JS -->
+    <!--</select>
+  </div>-->
+  
+  <!-- Кнопка и поле для добавления новой цели -->
+  <!--<div id="add-target-block" style="display: flex; gap: 8px; margin-top: 5px;">
+    <input type="text" id="new-target-input" placeholder="Новий тип цілі (напр., Калібр)..." style="font-size: 14px; padding: 8px;">
+    <button id="btn-add-target" type="button" style="width: auto; padding: 8px 15px; background-color: #27ae60; font-size: 14px;">
+      Додати
+    </button>
+  </div>
+</div>
+========================  -->
+
+<div class="form-group" style="position: relative;">
+  <label for="target-search">Ціль (швидкий пошук):</label>
+  
+  <!-- Поле ввода для поиска -->
+  <div style="position: relative; display: flex; align-items: center;">
+    <input type="text" id="target-search" placeholder="Почніть вводити назву цілі..." autocomplete="off" style="width: 100%; padding-right: 30px;">
+    <!-- Кнопка очистки поля (крестик) -->
+    <span id="clear-target-search" style="position: absolute; right: 10px; cursor: pointer; color: #999; display: none; font-weight: bold;">&times;</span>
+  </div>
+
+  <!-- Скрытый input для хранения финального выбранного значения формы -->
+  <input type="hidden" id="target-select" name="target">
+
+  <!-- Выпадающий блок с результатами поиска -->
+  <div id="target-dropdown-results" style="display: none; position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 2px;">
+    <div id="targets-list-container"></div>
+    
+    <!-- Динамическая кнопка добавления, если ничего не найдено -->
+    <div id="add-new-suggest-box" style="display: none; padding: 10px; border-top: 1px solid #eee; background: #f9f9f9; text-align: center;">
+      <button id="btn-quick-add" type="button" style="width: 100%; background: #27ae60; color: white; padding: 8px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer;">
+        + Створити ціль "<span id="new-target-name-span"></span>"
+      </button>
     </div>
+  </div>
+</div>
 
     <div class="form-group">
       <label for="detection-select">Вияв:</label>

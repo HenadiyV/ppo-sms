@@ -1,0 +1,212 @@
+
+App
+// import { Compass } from './compass.js';
+// import { generateReportText } from './report.js';
+// import { TargetSearch } from './targetSearch.js'; // <-- Наш новый чистый модуль
+
+// // Состояния компаса
+// let currentLiveAzimuth = 0;
+// let isCompassActive = false;
+
+// const startCompassBtn = document.getElementById('start-compass');
+// const azimuthDisplay = document.getElementById('azimuth-display');
+// const inputDetect = document.getElementById('azimuth-detect');
+// const inputCourse = document.getElementById('azimuth-course');
+
+// // 1. Инициализация компаса
+// const compass = new Compass(
+//   (azimuth, isRelative) => {
+//     currentLiveAzimuth = azimuth;
+//     if (isRelative) {
+//       azimuthDisplay.textContent = `${azimuth}° (відносний)`;
+//       azimuthDisplay.style.color = '#f39c12';
+//     } else {
+//       azimuthDisplay.textContent = `${azimuth}°`;
+//       azimuthDisplay.style.color = '#27ae60';
+//     }
+//   },
+//   (errorMessage) => {
+//     azimuthDisplay.textContent = `Помилка: ${errorMessage}`;
+//     azimuthDisplay.style.color = '#e74c3c';
+//   }
+// );
+
+// // Переключатель компаса (Вкл/Выкл)
+// startCompassBtn.addEventListener('click', async () => {
+//   if (!isCompassActive) {
+//     await compass.start();
+//     isCompassActive = true;
+//     startCompassBtn.textContent = 'Вимкнути компас';
+//     startCompassBtn.style.backgroundColor = '#c0392b';
+//   } else {
+//     compass.stop();
+//     isCompassActive = false;
+//     currentLiveAzimuth = 0;
+//     startCompassBtn.textContent = 'Увімкнути компас';
+//     startCompassBtn.style.backgroundColor = '#34495e';
+//     azimuthDisplay.textContent = '0°';
+//     azimuthDisplay.style.color = '#333';
+//   }
+// });
+
+// // Кнопки фиксации азимутов
+// document.getElementById('btn-fix-detect').addEventListener('click', () => {
+//   inputDetect.value = currentLiveAzimuth;
+// });
+
+// document.getElementById('btn-fix-course').addEventListener('click', () => {
+//   inputCourse.value = currentLiveAzimuth;
+// });
+
+// // 2. Инициализация при загрузке страницы
+// window.addEventListener('DOMContentLoaded', () => {
+//   // Запускаем интерактивный поиск целей
+//   new TargetSearch();
+
+//   // Автозаполнение времени и даты
+//   const now = new Date();
+  
+//   const hours = String(now.getHours()).padStart(2, '0');
+//   const minutes = String(now.getMinutes()).padStart(2, '0');
+//   document.getElementById('report-time').value = `${hours}:${minutes}`;
+
+//   const year = now.getFullYear();
+//   const month = String(now.getMonth() + 1).padStart(2, '0');
+//   const day = String(now.getDate()).padStart(2, '0');
+//   document.getElementById('report-date').value = `${year}-${month}-${day}`;
+// });
+
+// // 3. Генерация отчета
+// document.getElementById('generate-btn').addEventListener('click', () => {
+//   const target = document.getElementById('target-select').value;
+//   const detection = document.getElementById('detection-select').value;
+//   const time = document.getElementById('report-time').value;
+  
+//   const rawDate = document.getElementById('report-date').value;
+//   let formattedDate = '--.--.----';
+//   if (rawDate) {
+//     const [y, m, d] = rawDate.split('-');
+//     formattedDate = `${d}.${m}.${y}`;
+//   }
+
+//   const isDestroyed = document.getElementById('is-destroyed').checked;
+//   const azimuthDetect = inputDetect.value;
+//   const azimuthCourse = inputCourse.value;
+
+//   const report = generateReportText({
+//     target,
+//     detection,
+//     time,
+//     date: formattedDate,
+//     isDestroyed,
+//     azimuthDetect,
+//     azimuthCourse
+//   });
+
+//   document.getElementById('report-output').value = report;
+// });
+
+// // 4. Офлайн-режим (Service Worker)
+// if ('serviceWorker' in navigator) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker.register('./service-worker.js')
+//       .then(reg => console.log('SW зарегистрирован!', reg))
+//       .catch(err => console.error('Ошибка SW', err));
+//   });
+// }
+
+Compass 
+// export class Compass {
+//     constructor(onUpdateCallback, onErrorCallback) {
+//         this.onUpdate = onUpdateCallback;
+//         this.onError = onErrorCallback;
+//         this.azimuth = 0;
+//         this.hasActiveListener = false;
+//         this.isRelative = false;
+
+//         // Сохраняем ссылку на функцию обработчика, чтобы потом её можно было удалить
+//         this._boundHandleOrientation = (e) => this._handleOrientation(e);
+//     }
+
+//     async start() {
+//         if (!window.DeviceOrientationEvent) {
+//             this._sendError("Браузер не поддерживает датчики.");
+//             return;
+//         }
+
+//         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+//             try {
+//                 const response = await DeviceOrientationEvent.requestPermission();
+//                 if (response === 'granted') {
+//                     this._initListener();
+//                 } else {
+//                     this._sendError("Доступ відхилено.");
+//                 }
+//             } catch (error) {
+//                 this._sendError("Помилка запиту дозволу: " + error.message);
+//             }
+//         } else {
+//             this._initListener();
+//         }
+//     }
+
+//     // Новый метод для остановки компаса
+//     stop() {
+//         if (!this.hasActiveListener) return;
+
+//         window.removeEventListener('deviceorientationabsolute', this._boundHandleOrientation, true);
+//         window.removeEventListener('deviceorientation', this._boundHandleOrientation, true);
+
+//         this.hasActiveListener = false;
+//         this.azimuth = 0;
+//     }
+
+//     _initListener() {
+//         if (this.hasActiveListener) return;
+
+//         if ('ondeviceorientationabsolute' in window) {
+//             window.addEventListener('deviceorientationabsolute', this._boundHandleOrientation, true);
+//             this.hasActiveListener = true;
+//         } else if ('ondeviceorientation' in window) {
+//             window.addEventListener('deviceorientation', this._boundHandleOrientation, true);
+//             this.hasActiveListener = true;
+//         } else {
+//             this._sendError("Датчики не підтримуються.");
+//         }
+//     }
+
+//     _handleOrientation(event) {
+//         let heading = null;
+
+//         if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+//             heading = event.webkitCompassHeading;
+//             this.isRelative = false;
+//         } else if (event.absolute === true && event.alpha !== null) {
+//             heading = 360 - event.alpha;
+//             this.isRelative = false;
+//         } else if (event.alpha !== null) {
+//             heading = 360 - event.alpha;
+//             this.isRelative = true;
+//         }
+
+//         if (heading !== null) {
+//             this.azimuth = Math.round(heading);
+//             if (this.onUpdate) {
+//                 this.onUpdate(this.azimuth, this.isRelative);
+//             }
+//         } else {
+//             this._sendError("Датчик повернув порожні дані.");
+//         }
+//     }
+
+//     getAzimuth() {
+//         return this.azimuth;
+//     }
+
+//     _sendError(message) {
+//         console.warn(message);
+//         if (this.onError) {
+//             this.onError(message);
+//         }
+//     }
+// }
