@@ -1,75 +1,83 @@
 export class Compass {
     constructor(onUpdateCallback, onErrorCallback) {
-        this.onUpdate = onUpdateCallback;       // Функция для вывода азимута
-        this.onError = onErrorCallback;         // Функция для вывода ошибок на экран
+        this.onUpdate = onUpdateCallback;
+        this.onError = onErrorCallback;
         this.azimuth = 0;
         this.hasActiveListener = false;
+        this.isRelative = false;
+
+        // Сохраняем ссылку на функцию обработчика, чтобы потом её можно было удалить
+        this._boundHandleOrientation = (e) => this._handleOrientation(e);
     }
 
     async start() {
-        // Проверяем наличие API в браузере
         if (!window.DeviceOrientationEvent) {
-            this._sendError("Браузер не поддерживает датчики ориентации.");
+            this._sendError("Браузер не поддерживает датчики.");
             return;
         }
 
-        // Запрос разрешения для iOS 13+
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
             try {
                 const response = await DeviceOrientationEvent.requestPermission();
                 if (response === 'granted') {
                     this._initListener();
                 } else {
-                    this._sendError("Доступ до датчиків відхилено користувачем.");
+                    this._sendError("Доступ відхилено.");
                 }
             } catch (error) {
-                this._sendError("Помилка запиту дозволу на iOS: " + error.message);
+                this._sendError("Помилка запиту дозволу: " + error.message);
             }
         } else {
-            // Для Android (включая Vivo) запуск происходит напрямую
             this._initListener();
         }
+    }
+
+    // Новый метод для остановки компаса
+    stop() {
+        if (!this.hasActiveListener) return;
+
+        window.removeEventListener('deviceorientationabsolute', this._boundHandleOrientation, true);
+        window.removeEventListener('deviceorientation', this._boundHandleOrientation, true);
+
+        this.hasActiveListener = false;
+        this.azimuth = 0;
     }
 
     _initListener() {
         if (this.hasActiveListener) return;
 
-        // Для Android критически важно сначала пробовать absolute-версию события
         if ('ondeviceorientationabsolute' in window) {
-            window.addEventListener('deviceorientationabsolute', (e) => this._handleOrientation(e), true);
+            window.addEventListener('deviceorientationabsolute', this._boundHandleOrientation, true);
             this.hasActiveListener = true;
         } else if ('ondeviceorientation' in window) {
-            // Резервный вариант, если absolute не поддерживается
-            window.addEventListener('deviceorientation', (e) => this._handleOrientation(e), true);
+            window.addEventListener('deviceorientation', this._boundHandleOrientation, true);
             this.hasActiveListener = true;
         } else {
-            this._sendError("Не вдалося підписатися на події датчиків.");
+            this._sendError("Датчики не підтримуються.");
         }
     }
 
     _handleOrientation(event) {
         let heading = null;
 
-        // 1. Попытка для iOS
         if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
             heading = event.webkitCompassHeading;
-        }
-        // 2. Попытка для Android (абсолютный азимут)
-        else if (event.absolute === true && event.alpha !== null) {
+            this.isRelative = false;
+        } else if (event.absolute === true && event.alpha !== null) {
             heading = 360 - event.alpha;
-        }
-        // 3. Резервная попытка для Android (может быть неточным без калибровки, но покажет хоть что-то)
-        else if (event.alpha !== null) {
+            this.isRelative = false;
+        } else if (event.alpha !== null) {
             heading = 360 - event.alpha;
+            this.isRelative = true;
         }
 
         if (heading !== null) {
             this.azimuth = Math.round(heading);
             if (this.onUpdate) {
-                this.onUpdate(this.azimuth);
+                this.onUpdate(this.azimuth, this.isRelative);
             }
         } else {
-            this._sendError("Датчик повернув порожні дані (можливо, немає компаса в телефоні).");
+            this._sendError("Датчик повернув порожні дані.");
         }
     }
 
