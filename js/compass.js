@@ -41,7 +41,7 @@ export class Compass {
                 await this._handleButtonClick('course', this.btnFixCourse, this.inputCourse, 'Курс');
             });
         }
-        alert('Init');
+        //alert('Init');
     }
 
     // Загальний контролер для обох кнопок (КОД ПОВНІСТЮ ВАШ, БЕЗ ЗМІН)
