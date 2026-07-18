@@ -47,6 +47,9 @@ export class Compass {
     async _handleButtonClick(type, buttonEl, inputEl, labelText) {
         // 1. Якщо датчики ще взагалі не запущені — запускаємо їх при першому кліку
         if (!this.isSensorActive) {
+            // МИТТЄВИЙ ВІДГУК: Показуємо статус запуску, щоб користувач бачив роботу програми
+            inputEl.value = "Запуск датчиків...";
+
             const started = await this._startSensors();
             if (!started) return; // Якщо доступ відхилено — виходимо
         }
@@ -57,16 +60,17 @@ export class Compass {
             this.states[type] = 'scanning';
             this._updateButtonUI(buttonEl, 'scanning', labelText);
             inputEl.style.backgroundColor = '#e8f8f5'; // Підсвічуємо інпут, який зараз оновлюється
+
+            // ДОПРАЦЮВАННЯ: Миттєво записуємо поточне значення з датчика (або 0°, якщо пристрій ще не поворухнувся),
+            // щоб інпут відразу заповнився актуальними даними і не залишався порожнім.
+            inputEl.value = `${this.currentAzimuth}°`;
         }
         else if (this.states[type] === 'scanning') {
             // Друге натискання — фіксуємо поточний азимут
             this.states[type] = 'fixed';
-            inputEl.value = this.currentAzimuth;
+            inputEl.value = `${this.currentAzimuth}°`; // ДОПРАЦЮВАННЯ: Фіксуємо чисте значення з градусом
             inputEl.style.backgroundColor = ''; // Прибираємо підсвітку
             this._updateButtonUI(buttonEl, 'fixed', labelText);
-
-            // Якщо обидві кнопки зафіксовані або повернуті в idle, можна було б вимикати датчик, 
-            // але краще залишити його активним, щоб не запитувати дозвіл повторно.
         }
     }
 
@@ -118,7 +122,6 @@ export class Compass {
     }
 
     // Стрімінг даних в реальному часі тільки в ті інпути, які зараз "сканують"
-    // Цей метод повністю замінює роботу старого екрану
     _streamToActiveInputs(azimuth, isRelative) {
         const suffix = isRelative ? '° (відн.)' : '°';
 
