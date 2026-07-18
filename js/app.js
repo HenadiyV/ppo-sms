@@ -27,6 +27,14 @@ window.addEventListener('DOMContentLoaded', () => {
         inputDetectId: 'azimuth-detect',
         inputCourseId: 'azimuth-course'
     });
+ 
+    // Проверяем, существуют ли критические кнопки в HTML, прежде чем запускать класс
+    if (document.getElementById(compassConfig.btnFixDetectId) && document.getElementById(compassConfig.btnFixCourseId)) {
+        new Compass(compassConfig);
+        console.log("Компас успешно инициализирован");
+    } else {
+        console.error("Критическая ошибка: Кнопки компаса не найдены в HTML. Проверьте ID элементов!");
+    }
 
     // 3. Автозаполнение времени и даты
     const now = new Date();
