@@ -4,8 +4,8 @@ import { TargetSearch } from './targetSearch.js';
 import { WeaponManager } from './weaponManager.js';
 import { DbEditor } from './dbEditor.js';
 // Временный перехватчик скрытых ошибок для тестирования на телефоне
-window.addEventListener('error', function(e) {
-  alert('Критична помилка JS:\n' + e.message + '\nУ файлі: ' + e.filename + '\nРядок: ' + e.lineno);
+window.addEventListener('error', function (e) {
+    alert('Критична помилка JS:\n' + e.message + '\nУ файлі: ' + e.filename + '\nРядок: ' + e.lineno);
 });
 // Инициализация при загрузке страницы
 window.addEventListener('DOMContentLoaded', () => {
@@ -23,20 +23,34 @@ window.addEventListener('DOMContentLoaded', () => {
 
     //  Инициализируем компас и привязываем его к интерфейсу
     // Инициализируем компас без старой кнопки включения
-    new Compass({
-        displayId: 'azimuth-display', // Можно оставить для общего контроля, если он есть в HTML
+    // new Compass({
+    //     displayId: 'azimuth-display', // Можно оставить для общего контроля, если он есть в HTML
+    //     btnFixDetectId: 'btn-fix-detect',
+    //     btnFixCourseId: 'btn-fix-course',
+    //     inputDetectId: 'azimuth-detect',
+    //     inputCourseId: 'azimuth-course'
+    // });
+
+    // 1. Спочатку СТВОРЮЄМО об'єкт конфігурації
+    const compassConfig = {
+        displayId: 'azimuth-display',
         btnFixDetectId: 'btn-fix-detect',
         btnFixCourseId: 'btn-fix-course',
         inputDetectId: 'azimuth-detect',
         inputCourseId: 'azimuth-course'
-    });
- 
-    // Проверяем, существуют ли критические кнопки в HTML, прежде чем запускать класс
-    if (document.getElementById(compassConfig.btnFixDetectId) && document.getElementById(compassConfig.btnFixCourseId)) {
+    };
+
+    // 2. Тепер, коли об'єкт точно створено, БЕЗПЕЧНО перевіряємо елементи в HTML
+    const btnDetect = document.getElementById(compassConfig.btnFixDetectId);
+    const btnCourse = document.getElementById(compassConfig.btnFixCourseId);
+
+    if (btnDetect && btnCourse) {
         new Compass(compassConfig);
-        console.log("Компас успешно инициализирован");
+        console.log("Компас успішно ініціалізовано");
     } else {
-        console.error("Критическая ошибка: Кнопки компаса не найдены в HTML. Проверьте ID элементов!");
+        // Якщо кнопки не знайдені, виводимо зрозумілу помилку і на екран телефону
+        alert("Критична помилка: Кнопки компаса не знайдені в HTML за вказаними ID!");
+        console.error("Критична помилка: Кнопки компаса не знайдені в HTML. Перевірте ID елементів!");
     }
 
     // 3. Автозаполнение времени и даты
