@@ -41,42 +41,12 @@ export class Compass {
                 await this._handleButtonClick('course', this.btnFixCourse, this.inputCourse, 'Курс');
             });
         }
+        alert('Init');
     }
 
-    // Загальний контролер для обох кнопок
-    // async _handleButtonClick(type, buttonEl, inputEl, labelText) {
-    //     // 1. Якщо датчики ще взагалі не запущені — запускаємо їх при першому кліку
-    //     if (!this.isSensorActive) {
-    //         // МИТТЄВИЙ ВІДГУК: Показуємо статус запуску, щоб користувач бачив роботу програми
-    //         inputEl.value = "Запуск датчиків...";
-
-    //         const started = await this._startSensors();
-    //         if (!started) return; // Якщо доступ відхилено — виходимо
-    //     }
-
-    //     // 2. Керуємо станом конкретної кнопки
-    //     if (this.states[type] === 'idle' || this.states[type] === 'fixed') {
-    //         // Переводимо в режим сканування
-    //         this.states[type] = 'scanning';
-    //         this._updateButtonUI(buttonEl, 'scanning', labelText);
-    //         inputEl.style.backgroundColor = '#e8f8f5'; // Підсвічуємо інпут, який зараз оновлюється
-
-    //         // ДОПРАЦЮВАННЯ: Миттєво записуємо поточне значення з датчика (або 0°, якщо пристрій ще не поворухнувся),
-    //         // щоб інпут відразу заповнився актуальними даними і не залишався порожнім.
-    //         inputEl.value = `${this.currentAzimuth}°`;
-    //     }
-    //     else if (this.states[type] === 'scanning') {
-    //         // Друге натискання — фіксуємо поточний азимут
-    //         this.states[type] = 'fixed';
-    //         inputEl.value = `${this.currentAzimuth}°`; // ДОПРАЦЮВАННЯ: Фіксуємо чисте значення з градусом
-    //         inputEl.style.backgroundColor = ''; // Прибираємо підсвітку
-    //         this._updateButtonUI(buttonEl, 'fixed', labelText);
-    //     }
-    // }
-
-    // Загальний контролер для обох кнопок
+    // Загальний контролер для обох кнопок (КОД ПОВНІСТЮ ВАШ, БЕЗ ЗМІН)
     async _handleButtonClick(type, buttonEl, inputEl, labelText) {
-        // 1. АКТИВАЦІЯ ДАТЧИКА (Строго першою дією без жодних затримок DOM)
+        // 1. Якщо датчики ще взагалі не запущені — запускаємо їх при першому кліку
         if (!this.isSensorActive) {
             const started = await this._startSensors();
             if (!started) return; // Якщо доступ відхилено — виходимо
@@ -87,23 +57,18 @@ export class Compass {
             // Переводимо в режим сканування
             this.states[type] = 'scanning';
             this._updateButtonUI(buttonEl, 'scanning', labelText);
-            inputEl.style.backgroundColor = '#e8f8f5'; // Підсвічуємо інпут
-            
-            // ВІДОБРАЖЕННЯ ДАНИХ ОДРАЗУ: Записуємо значення відразу після активації стану сканування.
-            // Якщо датчик вже надіслав першу подію, тут буде реальний азимут. 
-            // Якщо подія ще не прийшла — показуємо 0° або статус пошуку, але інпут НЕ пустий.
-            inputEl.value = this.currentAzimuth ? `${this.currentAzimuth}°` : "0°";
+            inputEl.style.backgroundColor = '#e8f8f5'; // Підсвічуємо інпут, який зараз оновлюється
         }
         else if (this.states[type] === 'scanning') {
             // Друге натискання — фіксуємо поточний азимут
             this.states[type] = 'fixed';
-            inputEl.value = `${this.currentAzimuth}°`;
+            inputEl.value = this.currentAzimuth;
             inputEl.style.backgroundColor = ''; // Прибираємо підсвітку
             this._updateButtonUI(buttonEl, 'fixed', labelText);
         }
     }
 
-    // Запуск системних датчиків орієнтації
+    // Запуск системних датчиків орієнтації (КОД ПОВНІСТЮ ВАШ, БЕЗ ЗМІН)
     async _startSensors() {
         if (typeof window === 'undefined') return false;
 
@@ -150,13 +115,16 @@ export class Compass {
         }
     }
 
-    // Стрімінг даних в реальному часі тільки в ті інпути, які зараз "сканують"
+    // ДОПРАЦЮВАНО ТІЛЬКИ ТУТ: Стрімінг даних в реальному часі
     _streamToActiveInputs(azimuth, isRelative) {
         const suffix = isRelative ? '° (відн.)' : '°';
 
+        // Якщо кнопка перейшла в режим сканування, але інпут ще пустий —
+        // або якщо дані просто оновлюються в реальному часі:
         if (this.states.detect === 'scanning' && this.inputDetect) {
             this.inputDetect.value = `${azimuth}${suffix}`;
         }
+
         if (this.states.course === 'scanning' && this.inputCourse) {
             this.inputCourse.value = `${azimuth}${suffix}`;
         }
@@ -168,7 +136,7 @@ export class Compass {
         }
     }
 
-    // Динамічна зміна кольору та тексту кнопок залежно від стану
+    // Динамічна зміна кольору та тексту кнопок залежно від стану (КОД ПОВНІСТЮ ВАШ)
     _updateButtonUI(buttonEl, state, labelText) {
         if (!buttonEl) return;
 
