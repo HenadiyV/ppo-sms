@@ -91,6 +91,34 @@ export class Compass {
         }
     }
 
+    // deviceOrientationHandler(event) {
+    //     let azimuth = 0;
+    //     let isRelative = false;
+
+    //     if (event.webkitCompassHeading !== undefined) {
+    //         azimuth = Math.round(event.webkitCompassHeading);
+    //     } else if (event.alpha !== null) {
+    //         azimuth = Math.round(360 - event.alpha);
+    //         isRelative = true;
+    //     } else {
+    //         return;
+    //     }
+
+    //     this.currentAzimuth = azimuth;
+
+    //     // Стримим только в те поля, которые сейчас сканируются
+    //     const suffix = isRelative ? '° (відн.)' : '°';
+
+    //     if (this.states.detect === 'scanning' && this.inputDetect) {
+    //         this.inputDetect.value = azimuth + suffix;
+    //     }
+    //     if (this.states.course === 'scanning' && this.inputCourse) {
+    //         this.inputCourse.value = azimuth + suffix;
+    //     }
+    //     if (this.display) {
+    //         this.display.textContent = azimuth + '°';
+    //     }
+    // }
     deviceOrientationHandler(event) {
         let azimuth = 0;
         let isRelative = false;
@@ -106,7 +134,6 @@ export class Compass {
 
         this.currentAzimuth = azimuth;
 
-        // Стримим только в те поля, которые сейчас сканируются
         const suffix = isRelative ? '° (відн.)' : '°';
 
         if (this.states.detect === 'scanning' && this.inputDetect) {
@@ -115,6 +142,8 @@ export class Compass {
         if (this.states.course === 'scanning' && this.inputCourse) {
             this.inputCourse.value = azimuth + suffix;
         }
+
+        // БЕЗПЕЧНА ПЕРЕВІРКА: оновлюємо дисплей тільки якщо він реально існує в HTML
         if (this.display) {
             this.display.textContent = azimuth + '°';
         }

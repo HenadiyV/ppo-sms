@@ -3,7 +3,10 @@ import { generateReportText } from './report.js';
 import { TargetSearch } from './targetSearch.js';
 import { WeaponManager } from './weaponManager.js';
 import { DbEditor } from './dbEditor.js';
-
+// Временный перехватчик скрытых ошибок для тестирования на телефоне
+window.addEventListener('error', function(e) {
+  alert('Критична помилка JS:\n' + e.message + '\nУ файлі: ' + e.filename + '\nРядок: ' + e.lineno);
+});
 // Инициализация при загрузке страницы
 window.addEventListener('DOMContentLoaded', () => {
     // Запускаем интерактивный поиск целей
