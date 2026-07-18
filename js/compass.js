@@ -7,14 +7,13 @@ export class Compass {
         this.inputCourse = document.getElementById(config.inputCourseId);
 
         this.states = {
-            detect: 'idle', // 'idle', 'scanning', 'fixed'
+            detect: 'idle',
             course: 'idle'
         };
 
         this.currentAzimuth = 0;
         this.isSensorActive = false;
 
-        // Жестко привязываем контекст
         this.deviceOrientationHandler = this.deviceOrientationHandler.bind(this);
 
         this._initEvents();
@@ -35,9 +34,9 @@ export class Compass {
     }
 
     _processClick(type, buttonEl, inputEl, labelText) {
-        // Если датчик еще не активен — пробуем запустить
+        // Якщо датчик ще не запущено — запускаємо безпосередньо в момент кліку
         if (!this.isSensorActive) {
-            inputEl.value = "Активація...";
+            inputEl.value = "Запит датчика...";
             this._startSensors(inputEl);
         }
 
@@ -45,14 +44,17 @@ export class Compass {
             this.states[type] = 'scanning';
             this._updateButtonUI(buttonEl, 'scanning', labelText);
             inputEl.style.backgroundColor = '#e8f8f5';
-            inputEl.value = this.currentAzimuth + '°';
+
+            // Якщо на датчику вже є якісь дані, відразу виводимо їх
+            if (this.currentAzimuth !== 0) {
+                inputEl.value = this.currentAzimuth + '°';
+            }
         }
         else if (this.states[type] === 'scanning') {
             this.states[type] = 'fixed';
             inputEl.style.backgroundColor = '';
             this._updateButtonUI(buttonEl, 'fixed', labelText);
 
-            // Фиксируем чистую цифру
             const numericVal = parseInt(inputEl.value, 10);
             inputEl.value = (isNaN(numericVal) ? this.currentAzimuth : numericVal) + '°';
         }
@@ -61,74 +63,52 @@ export class Compass {
     _startSensors(inputEl) {
         if (typeof window === 'undefined') return;
 
-        // Проверка на iOS с промисами
+        // ПЕРЕВІРКА iOS (Safari та браузери на iOS 13+)
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission()
                 .then(permission => {
+                    inputEl.value = "iOS: Статус " + permission;
                     if (permission === 'granted') {
                         window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
                         this.isSensorActive = true;
-                    } else {
-                        inputEl.value = "iOS: Відхилено";
                     }
                 })
                 .catch(err => {
-                    inputEl.value = "Помилка iOS";
-                    console.error(err);
+                    inputEl.value = "Помилка запиту iOS";
+                    alert("iOS Error: " + err.message);
                 });
         }
-        // Android и стандартные браузеры
+        // ПЕРЕВІРКА ANDROID / СТАНДАРТНИХ БРАУЗЕРІВ
         else {
+            // Пробуємо підключити абсолютну орієнтацію (компас)
             if ('ondeviceorientationabsolute' in window) {
                 window.addEventListener('deviceorientationabsolute', this.deviceOrientationHandler, true);
                 this.isSensorActive = true;
-            } else if ('ondeviceorientation' in window) {
+                inputEl.value = "Пошук супутників...";
+            }
+            // Якщо абсолютної немає, беремо звичайну
+            else if ('ondeviceorientation' in window) {
                 window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
                 this.isSensorActive = true;
+                inputEl.value = "Пошук датчика...";
             } else {
-                inputEl.value = "Не підтримується";
+                inputEl.value = "Датчик не підтримується";
             }
         }
     }
 
-    // deviceOrientationHandler(event) {
-    //     let azimuth = 0;
-    //     let isRelative = false;
-
-    //     if (event.webkitCompassHeading !== undefined) {
-    //         azimuth = Math.round(event.webkitCompassHeading);
-    //     } else if (event.alpha !== null) {
-    //         azimuth = Math.round(360 - event.alpha);
-    //         isRelative = true;
-    //     } else {
-    //         return;
-    //     }
-
-    //     this.currentAzimuth = azimuth;
-
-    //     // Стримим только в те поля, которые сейчас сканируются
-    //     const suffix = isRelative ? '° (відн.)' : '°';
-
-    //     if (this.states.detect === 'scanning' && this.inputDetect) {
-    //         this.inputDetect.value = azimuth + suffix;
-    //     }
-    //     if (this.states.course === 'scanning' && this.inputCourse) {
-    //         this.inputCourse.value = azimuth + suffix;
-    //     }
-    //     if (this.display) {
-    //         this.display.textContent = azimuth + '°';
-    //     }
-    // }
     deviceOrientationHandler(event) {
         let azimuth = 0;
         let isRelative = false;
 
+        // Перевіряємо наявність апаратних даних від компаса
         if (event.webkitCompassHeading !== undefined) {
             azimuth = Math.round(event.webkitCompassHeading);
         } else if (event.alpha !== null) {
             azimuth = Math.round(360 - event.alpha);
             isRelative = true;
         } else {
+            // Якщо подія тригериться, але пристрій лежить нерухомо або не віддає координати
             return;
         }
 
@@ -136,14 +116,13 @@ export class Compass {
 
         const suffix = isRelative ? '° (відн.)' : '°';
 
+        // Стрімимо дані ТІЛЬКИ в активні інпути
         if (this.states.detect === 'scanning' && this.inputDetect) {
             this.inputDetect.value = azimuth + suffix;
         }
         if (this.states.course === 'scanning' && this.inputCourse) {
             this.inputCourse.value = azimuth + suffix;
         }
-
-        // БЕЗПЕЧНА ПЕРЕВІРКА: оновлюємо дисплей тільки якщо він реально існує в HTML
         if (this.display) {
             this.display.textContent = azimuth + '°';
         }
