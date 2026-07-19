@@ -1,5 +1,5 @@
 // Меняем версию кэша, чтобы заставить браузер обновиться
-const CACHE_NAME = 'ppo-app-cache-v3';
+const CACHE_NAME = 'ppo-app-cache-v4';
 
 const ASSETS = [
     './',
@@ -11,7 +11,8 @@ const ASSETS = [
     './js/directory.js',
     './js/targetSearch.js',
     './js/weaponManager.js',
-    './js/dbEditor.js'
+    './js/dbEditor.js',
+    './js/config.js'
 ];
 
 // Установка: кэшируем новые файлы

@@ -16,22 +16,18 @@ export function generateReportText(data) {
     let report = `${data.time} ${data.date} ${data.position || "Не вказано"}\n`;
     report += `Тип цілі: ${data.target || "Не визначено"}\n`;
     report += `№ ${data.targetNumber || "Не вказано"}\n`;
-    report += `Кількість:${data.targetCount || "Не вказано"}\n`;
+    report += `Кількість: ${data.targetCount || "Не вказано"}\n`;
     report += `${data.detection || "Не вказано"}\n`;
     report += `(А-${data.azimuthDetect ? data.azimuthDetect + '°' : 'не вказано'} К-${data.azimuthCourse ? data.azimuthCourse + '°' : 'не вказано'})\n`;
-    report += ` ${data.isDestroyed}\n`;
+    report += `${data.isDestroyed || "Не вказано"}\n`;
+
     // Додаємо блок зброї, якщо вона була обрана
     if (data.weapon) {
         report += `Витрати БК: ${data.weapon}\n`;
-        if (data.ammo && data.ammo !== "Не вказано") {
-            report += `${data.ammo} Кількість: ${data.countAmmo} шт. \n`;
-        } else {
-            report += `Кількість: ${data.countAmmo} шт.`;
-        }
+        const ammoLabel = (data.ammo && data.ammo !== "Не вказано") ? data.ammo : "Не вказано";
+        const countLabel = data.countAmmo || "Не вказано";
+        report += `${ammoLabel} Кількість: ${countLabel} шт.\n`;
     }
-
-
-
 
     return report;
 }

@@ -3,10 +3,54 @@ import { generateReportText } from './report.js';
 import { TargetSearch } from './targetSearch.js';
 import { WeaponManager } from './weaponManager.js';
 import { DbEditor } from './dbEditor.js';
-// Временный перехватчик скрытых ошибок для тестирования на телефоне
+import { CONFIG } from './config.js';
+
+// Перехоплювач помилок JS для зручного тестування на телефоні
 window.addEventListener('error', function (e) {
     alert('Критична помилка JS:\n' + e.message + '\nУ файлі: ' + e.filename + '\nРядок: ' + e.lineno);
 });
+
+if (CONFIG.DEBUG_MODE) {
+    console.log(`ППО СМС v${CONFIG.VERSION} — debug mode`);
+}
+
+// Ініціалізація компаса: датчики орієнтації запускаються автоматично
+// при першому натисканні кнопки заміру азимуту (виявлення або курсу)
+function initCompass() {
+    const compassConfig = {
+        displayId: 'azimuth-display',
+        btnFixDetectId: 'btn-fix-detect',
+        btnFixCourseId: 'btn-fix-course',
+        inputDetectId: 'azimuth-detect',
+        inputCourseId: 'azimuth-course'
+    };
+
+    const btnDetect = document.getElementById(compassConfig.btnFixDetectId);
+    const btnCourse = document.getElementById(compassConfig.btnFixCourseId);
+
+    if (btnDetect && btnCourse) {
+        new Compass(compassConfig);
+        if (CONFIG.DEBUG_MODE) console.log('Компас успішно ініціалізовано');
+    } else {
+        alert('Критична помилка: Кнопки компаса не знайдені в HTML за вказаними ID!');
+        console.error('Критична помилка: Кнопки компаса не знайдені в HTML. Перевірте ID елементів!');
+    }
+}
+
+// Автозаповнення поточної дати та часу у формі
+function fillDefaultDateTime() {
+    const now = new Date();
+
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('report-time').value = `${hours}:${minutes}`;
+
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    document.getElementById('report-date').value = `${year}-${month}-${day}`;
+}
+
 // Инициализация при загрузке страницы
 window.addEventListener('DOMContentLoaded', () => {
     // Запускаем интерактивный поиск целей
@@ -21,52 +65,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // Запускаем редактор базы данных
     new DbEditor();
 
-    //  Инициализируем компас и привязываем его к интерфейсу
-    // Инициализируем компас без старой кнопки включения
-    // new Compass({
-    //     displayId: 'azimuth-display', // Можно оставить для общего контроля, если он есть в HTML
-    //     btnFixDetectId: 'btn-fix-detect',
-    //     btnFixCourseId: 'btn-fix-course',
-    //     inputDetectId: 'azimuth-detect',
-    //     inputCourseId: 'azimuth-course'
-    // });
-
-    // 1. Спочатку СТВОРЮЄМО об'єкт конфігурації
-    const compassConfig = {
-        displayId: 'azimuth-display',
-        btnFixDetectId: 'btn-fix-detect',
-        btnFixCourseId: 'btn-fix-course',
-        inputDetectId: 'azimuth-detect',
-        inputCourseId: 'azimuth-course'
-    };
-
-    // 2. Тепер, коли об'єкт точно створено, БЕЗПЕЧНО перевіряємо елементи в HTML
-    const btnDetect = document.getElementById(compassConfig.btnFixDetectId);
-    const btnCourse = document.getElementById(compassConfig.btnFixCourseId);
-
-    if (btnDetect && btnCourse) {
-        new Compass(compassConfig);
-        console.log("Компас успішно ініціалізовано");
-    } else {
-        // Якщо кнопки не знайдені, виводимо зрозумілу помилку і на екран телефону
-        alert("Критична помилка: Кнопки компаса не знайдені в HTML за вказаними ID!");
-        console.error("Критична помилка: Кнопки компаса не знайдені в HTML. Перевірте ID елементів!");
-    }
-
-    // 3. Автозаполнение времени и даты
-    const now = new Date();
-
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('report-time').value = `${hours}:${minutes}`;
-
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    document.getElementById('report-date').value = `${year}-${month}-${day}`;
+    initCompass();
+    fillDefaultDateTime();
 });
 
-// 4. Генерация отчета
+// Генерація звіту
 document.getElementById('generate-btn').addEventListener('click', () => {
     const target = document.getElementById('target-select').value;
     const detection = document.getElementById('detection-select').value;

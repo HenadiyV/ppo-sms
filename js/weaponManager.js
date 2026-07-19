@@ -10,7 +10,7 @@ export class WeaponManager {
         }
         // Подписываемся на обновление справочников
         document.addEventListener('directoryUpdated', () => {
-            this.populateWeapons();
+            this.populateWeapons({ preserveSelection: true });
         });
     }
 
@@ -24,9 +24,12 @@ export class WeaponManager {
     }
 
     // Наповнюємо список зброї
-    populateWeapons() {
+    populateWeapons({ preserveSelection = false } = {}) {
         const data = getWeaponsData();
         const sortedWeapons = Object.keys(data).sort((a, b) => a.localeCompare(b, 'uk'));
+
+        const previousWeapon = preserveSelection ? this.weaponSelect.value : '';
+        const previousAmmo = preserveSelection ? this.ammoSelect.value : '';
 
         // Очищуємо і ставимо дефолтний варіант
         this.weaponSelect.innerHTML = '<option value="">-- Оберіть зброю --</option>';
@@ -37,6 +40,16 @@ export class WeaponManager {
             option.textContent = weapon;
             this.weaponSelect.appendChild(option);
         });
+
+        // Якщо раніше обрана зброя все ще існує в довіднику — відновлюємо вибір
+        if (previousWeapon && data[previousWeapon]) {
+            this.weaponSelect.value = previousWeapon;
+            this.handleWeaponChange();
+            if (previousAmmo && [...this.ammoSelect.options].some(o => o.value === previousAmmo)) {
+                this.ammoSelect.value = previousAmmo;
+            }
+            return;
+        }
 
         this.ammoSelect.innerHTML = '<option value="">-- Спочатку оберіть зброю --</option>';
         this.ammoSelect.disabled = true;

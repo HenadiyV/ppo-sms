@@ -68,47 +68,62 @@ export class Compass {
         }
     }
 
-    // Запуск системних датчиків орієнтації (КОД ПОВНІСТЮ ВАШ, БЕЗ ЗМІН)
+    // Запуск системних датчиків орієнтації
     async _startSensors() {
         if (typeof window === 'undefined') return false;
 
-        this.deviceOrientationHandler = (event) => {
-            let azimuth = 0;
+        // Прапорець: як тільки прийшла хоч одна подія з "справжнім" абсолютним
+        // азимутом (Android deviceorientationabsolute), ігноруємо паралельні
+        // "відносні" події deviceorientation, щоб показання не смикались
+        this._hasAbsoluteFix = false;
+
+        const processEvent = (event, isAbsoluteChannel) => {
+            if (this._hasAbsoluteFix && !isAbsoluteChannel) return;
+
+            let azimuth = null;
             let isRelative = false;
 
-            if (event.webkitCompassHeading !== undefined) {
+            if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+                // iOS Safari: вже готовий магнітний азимут
                 azimuth = Math.round(event.webkitCompassHeading);
-            } else if (event.alpha !== null) {
+            } else if (event.alpha !== null && event.alpha !== undefined) {
                 azimuth = Math.round(360 - event.alpha);
-                isRelative = true;
+                isRelative = !(isAbsoluteChannel || event.absolute === true);
             }
 
-            this.currentAzimuth = azimuth;
+            if (azimuth === null) return; // подія без корисних даних — ігноруємо
 
-            // Миттєво оновлюємо інпути, які зараз перебувають у режимі сканування
-            this._streamToActiveInputs(azimuth, isRelative);
+            if (isAbsoluteChannel) this._hasAbsoluteFix = true;
+
+            this.currentAzimuth = ((azimuth % 360) + 360) % 360;
+            this._streamToActiveInputs(this.currentAzimuth, isRelative);
         };
 
+        this.deviceOrientationHandler = (event) => processEvent(event, false);
+        this.deviceOrientationAbsoluteHandler = (event) => processEvent(event, true);
+
         try {
+            // iOS 13+ вимагає явного дозволу користувача перед доступом до датчиків
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const permission = await DeviceOrientationEvent.requestPermission();
-                if (permission === 'granted') {
-                    window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
-                    this.isSensorActive = true;
-                    return true;
-                } else {
+                if (permission !== 'granted') {
                     this._handleGlobalError('Доступ відхилено');
                     return false;
                 }
-            } else {
-                if ('ondeviceorientationabsolute' in window) {
-                    window.addEventListener('deviceorientationabsolute', this.deviceOrientationHandler, true);
-                } else {
-                    window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
-                }
-                this.isSensorActive = true;
-                return true;
             }
+
+            // Слухаємо ОБИДВІ події одночасно:
+            // - 'deviceorientation' — універсальна, працює всюди, включно з
+            //    емуляцією через Chrome DevTools (Sensors) на ПК;
+            // - 'deviceorientationabsolute' — точніший справжній компас на Android,
+            //    коли пристрій його підтримує.
+            window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
+            if ('ondeviceorientationabsolute' in window) {
+                window.addEventListener('deviceorientationabsolute', this.deviceOrientationAbsoluteHandler, true);
+            }
+
+            this.isSensorActive = true;
+            return true;
         } catch (error) {
             this._handleGlobalError(error.message || 'Помилка датчиків');
             return false;

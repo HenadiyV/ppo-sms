@@ -74,187 +74,196 @@
 <body>
 
     <div class="container">
-        <h2>Новий звіт ППО 1</h2>
+        <h2>Новий звіт ППО 11</h2>
         <div class="form-group">
             <label for="position">Позиція:</label>
             <textarea id="position" placeholder="Вкажить назву позиції" style="width: 100%;"></textarea>
         </div>
-
-        <!-- Фиксация Азимута 1 (Виявлення) -->
-        <div class="form-group" style="margin-bottom: 15px;">
-            <label for="azimuth-detect">Азимут виявлення (звідки):</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="number" id="azimuth-detect" placeholder="0" style="flex: 2;">
-                <button id="btn-fix-detect" type="button" style="flex: 3; background-color: #16a085;">
-                    🧭 Заміряти азимут виявлення
-                </button>
-            </div>
-        </div>
-
-        <!-- Фиксация Азимута 2 (Курс руху) -->
-        <div class="form-group" style="margin-bottom: 5px;">
-            <label for="azimuth-course">Курс руху (куди летить):</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="number" id="azimuth-course" placeholder="0" style="flex: 2;">
-                <button id="btn-fix-course" type="button" style="flex: 3; background-color: #2980b9;">
-                    🧭 Заміряти азимут курсу
-                </button>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="target-number">Номер цілі:</label>
-            <input type="number" id="target-number">
-        </div>
-
-        <div class="form-group">
-            <label for="target-count">Кількість:</label>
-            <input type="number" id="target-count">
-        </div>
-
-        <div class="form-group" style="position: relative;">
-            <label for="target-search">Ціль (швидкий пошук):</label>
-
-            <!-- Поле ввода для поиска -->
-            <div style="position: relative; display: flex; align-items: center;">
-                <input type="text" id="target-search" placeholder="Почніть вводити назву цілі..." autocomplete="off"
-                    style="width: 100%; padding-right: 30px;">
-                <!-- Кнопка очистки поля (крестик) -->
-                <span id="clear-target-search"
-                    style="position: absolute; right: 10px; cursor: pointer; color: #999; display: none; font-weight: bold;">&times;</span>
+        <!-- Блок компаса и фиксации направлений -->
+        <!-- Компас вмикається автоматично при першому натисканні кнопки заміру азимуту (на iOS запитає дозвіл) -->
+        <div class="form-group"
+            style="background: #fcfcfc; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;">
+            <div class="compass-val" id="azimut-view" style="margin-bottom: 15px;">
+                Поточний азимут: <span id="azimuth-display">0°</span>
             </div>
 
-            <!-- Скрытый input для хранения финального выбранного значения формы -->
-            <input type="hidden" id="target-select" name="target">
-
-            <!-- Выпадающий блок с результатами поиска -->
-            <div id="target-dropdown-results"
-                style="display: none; position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 2px;">
-                <div id="targets-list-container"></div>
-
-                <!-- Динамическая кнопка добавления, если ничего не найдено -->
-                <div id="add-new-suggest-box"
-                    style="display: none; padding: 10px; border-top: 1px solid #eee; background: #f9f9f9; text-align: center;">
-                    <button id="btn-quick-add" type="button"
-                        style="width: 100%; background: #27ae60; color: white; padding: 8px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer;">
-                        + Створити ціль "<span id="new-target-name-span"></span>"
+            <!-- Фиксация Азимута 1 (Виявлення) -->
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="azimuth-detect">Азимут виявлення (звідки):</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="number" id="azimuth-detect" placeholder="0" style="flex: 2;">
+                    <button id="btn-fix-detect" type="button" style="flex: 3; background-color: #16a085;">
+                        🧭 Заміряти азимут виявлення
                     </button>
                 </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="detection-select">Вияв:</label>
-            <select id="detection-select">
-                <option value="" disabled selected>Оберіть спосіб виявлення...</option>
-                <option value="Ціль виявлено візуально">Візуально</option>
-                <option value="Ціль виявлено акустично">Акустично</option>
-                <option value="Ціль виявлено акустично та візуально">Акустично та візуально</option>
-                <option value="Ціль акустично та візуально не виявленно">Не виявленно акустично та візуально </option>
-            </select>
-        </div>
-
-        <!-- Поля времени и даты (сначала время!) -->
-        <div class="form-group">
-            <label for="report-time">Час виявлення цілі:</label>
-            <input type="time" id="report-time">
-        </div>
-
-        <div class="form-group">
-            <label for="report-date">Дата:</label>
-            <input type="date" id="report-date">
-        </div>
-
-        <div class="form-group">
-            <label for="is-destroyed">Ціль:</label>
-            <select id="is-destroyed">
-                <option value="" disabled selected>Оберіть результат відпрацювання...</option>
-                <option value="Ціль обстріляно не знищено">Обстріляно не знищено</option>
-                <option value="Ціль обстріляно і ЗНИЩЕНО">Обстріляно і знищено</option>
-                <option value="Вогонь не відкривали далека відстань.">Вогонь не відкривали далека відстань.</option>
-            </select>
-        </div>
-
-        <!-- Вибір Зброї -->
-        <div class="form-group">
-            <label for="weapon-select">Використана зброя:</label>
-            <select id="weapon-select" name="weapon"
-                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                <option value="">-- Оберіть зброю --</option>
-            </select>
-        </div>
-
-        <!-- Вибір Боєприпасу (залежний) -->
-        <div class="form-group">
-            <label for="ammo-select">Боєприпас:</label>
-            <select id="ammo-select" name="ammo"
-                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;" disabled>
-                <option value="">-- Спочатку оберіть зброю --</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>
-                Кількість боєприпасів: <input type="number" id="count-ammo" style="width: auto;">
-            </label>
-        </div>
-
-        <button id="generate-btn">Сформувати звіт</button>
-
-        <div class="form-group" style="margin-top: 20px;">
-            <label for="report-output">Готовий звіт:</label>
-            <textarea id="report-output" readonly rows="5" style="width: 100%; font-family: monospace;"></textarea>
-        </div>
-    </div>
-    <hr style="margin: 30px 0; border: 1px solid #ddd;">
-
-    <!-- Секція Управління Справочниками -->
-    <div class="directory-editor-section"
-        style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
-        <h3 style="margin-top: 0; color: #2c3e50;">⚙️ Керування довідниками</h3>
-        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Тут ви можете редагувати або видаляти типи цілей,
-            зброю та боєприпаси.</p>
-
-        <!-- Вкладки вибору довідника -->
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button id="tab-edit-targets"
-                style="flex: 1; padding: 8px; cursor: pointer; border: none; background: #3498db; color: white; border-radius: 4px;">🎯
-                Цілі</button>
-            <button id="tab-edit-weapons"
-                style="flex: 1; padding: 8px; cursor: pointer; border: none; background: #bdc3c7; color: #333; border-radius: 4px;">⚔️
-                Зброя та БК</button>
-        </div>
-
-        <!-- Панель редагування цілей -->
-        <div id="panel-targets" style="display: block;">
-            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                <input type="text" id="new-target-db-input" placeholder="Додати нову ціль в базу..."
-                    style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <button id="btn-add-target-db"
-                    style="width:50px;padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+            <!-- Фиксация Азимута 2 (Курс руху) -->
+            <div class="form-group" style="margin-bottom: 5px;">
+                <label for="azimuth-course">Курс руху (куди летить):</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="number" id="azimuth-course" placeholder="0" style="flex: 2;">
+                    <button id="btn-fix-course" type="button" style="flex: 3; background-color: #2980b9;">
+                        🧭 Заміряти азимут курсу
+                    </button>
+                </div>
             </div>
-            <div id="db-targets-list"
-                style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; background: white; border-radius: 4px;">
-                <!-- Список цілей буде генеритися тут -->
-            </div>
-        </div>
 
-        <!-- Панель редагування зброї -->
-        <div id="panel-weapons" style="display: none;">
-            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                <input type="text" id="new-weapon-db-input" placeholder="Додати нову зброю..."
-                    style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <button id="btn-add-weapon-db"
-                    style="width:50px; padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+            <div class="form-group">
+                <label for="target-number">Номер цілі:</label>
+                <input type="number" id="target-number">
             </div>
-            <div id="db-weapons-list"
-                style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; background: white; border-radius: 4px; margin-bottom: 10px;">
-                <!-- Список зброї буде тут -->
+
+            <div class="form-group">
+                <label for="target-count">Кількість:</label>
+                <input type="number" id="target-count">
+            </div>
+
+            <div class="form-group" style="position: relative;">
+                <label for="target-search">Ціль (швидкий пошук):</label>
+
+                <!-- Поле ввода для поиска -->
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="text" id="target-search" placeholder="Почніть вводити назву цілі..." autocomplete="off"
+                        style="width: 100%; padding-right: 30px;">
+                    <!-- Кнопка очистки поля (крестик) -->
+                    <span id="clear-target-search"
+                        style="position: absolute; right: 10px; cursor: pointer; color: #999; display: none; font-weight: bold;">&times;</span>
+                </div>
+
+                <!-- Скрытый input для хранения финального выбранного значения формы -->
+                <input type="hidden" id="target-select" name="target">
+
+                <!-- Выпадающий блок с результатами поиска -->
+                <div id="target-dropdown-results"
+                    style="display: none; position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 2px;">
+                    <div id="targets-list-container"></div>
+
+                    <!-- Динамическая кнопка добавления, если ничего не найдено -->
+                    <div id="add-new-suggest-box"
+                        style="display: none; padding: 10px; border-top: 1px solid #eee; background: #f9f9f9; text-align: center;">
+                        <button id="btn-quick-add" type="button"
+                            style="width: 100%; background: #27ae60; color: white; padding: 8px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer;">
+                            + Створити ціль "<span id="new-target-name-span"></span>"
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="detection-select">Вияв:</label>
+                <select id="detection-select">
+                    <option value="" disabled selected>Оберіть спосіб виявлення...</option>
+                    <option value="Ціль виявлено візуально">Візуально</option>
+                    <option value="Ціль виявлено акустично">Акустично</option>
+                    <option value="Ціль виявлено акустично та візуально">Акустично та візуально</option>
+                    <option value="Ціль акустично та візуально не виявленно">Не виявленно акустично та візуально
+                    </option>
+                </select>
+            </div>
+
+            <!-- Поля времени и даты (сначала время!) -->
+            <div class="form-group">
+                <label for="report-time">Час виявлення цілі:</label>
+                <input type="time" id="report-time">
+            </div>
+
+            <div class="form-group">
+                <label for="report-date">Дата:</label>
+                <input type="date" id="report-date">
+            </div>
+
+            <div class="form-group">
+                <label for="is-destroyed">Ціль:</label>
+                <select id="is-destroyed">
+                    <option value="" disabled selected>Оберіть результат відпрацювання...</option>
+                    <option value="Ціль обстріляно не знищено">Обстріляно не знищено</option>
+                    <option value="Ціль обстріляно і ЗНИЩЕНО">Обстріляно і знищено</option>
+                    <option value="Вогонь не відкривали далека відстань.">Вогонь не відкривали далека відстань.</option>
+                </select>
+            </div>
+
+            <!-- Вибір Зброї -->
+            <div class="form-group">
+                <label for="weapon-select">Використана зброя:</label>
+                <select id="weapon-select" name="weapon"
+                    style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">-- Оберіть зброю --</option>
+                </select>
+            </div>
+
+            <!-- Вибір Боєприпасу (залежний) -->
+            <div class="form-group">
+                <label for="ammo-select">Боєприпас:</label>
+                <select id="ammo-select" name="ammo"
+                    style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;" disabled>
+                    <option value="">-- Спочатку оберіть зброю --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    Кількість боєприпасів: <input type="number" id="count-ammo" style="width: auto;">
+                </label>
+            </div>
+
+            <button id="generate-btn">Сформувати звіт</button>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="report-output">Готовий звіт:</label>
+                <textarea id="report-output" readonly rows="5" style="width: 100%; font-family: monospace;"></textarea>
             </div>
         </div>
-    </div>
-    <!-- Подключаем главный JS как модуль -->
-    <script type="module" src="js/app.js"></script>
+        <hr style="margin: 30px 0; border: 1px solid #ddd;">
+
+        <!-- Секція Управління Справочниками -->
+        <div class="directory-editor-section"
+            style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
+            <h3 style="margin-top: 0; color: #2c3e50;">⚙️ Керування довідниками</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Тут ви можете редагувати або видаляти типи
+                цілей,
+                зброю та боєприпаси.</p>
+
+            <!-- Вкладки вибору довідника -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button id="tab-edit-targets"
+                    style="flex: 1; padding: 8px; cursor: pointer; border: none; background: #3498db; color: white; border-radius: 4px;">🎯
+                    Цілі</button>
+                <button id="tab-edit-weapons"
+                    style="flex: 1; padding: 8px; cursor: pointer; border: none; background: #bdc3c7; color: #333; border-radius: 4px;">⚔️
+                    Зброя та БК</button>
+            </div>
+
+            <!-- Панель редагування цілей -->
+            <div id="panel-targets" style="display: block;">
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <input type="text" id="new-target-db-input" placeholder="Додати нову ціль в базу..."
+                        style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <button id="btn-add-target-db"
+                        style="width:50px;padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+                </div>
+                <div id="db-targets-list"
+                    style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; background: white; border-radius: 4px;">
+                    <!-- Список цілей буде генеритися тут -->
+                </div>
+            </div>
+
+            <!-- Панель редагування зброї -->
+            <div id="panel-weapons" style="display: none;">
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <input type="text" id="new-weapon-db-input" placeholder="Додати нову зброю..."
+                        style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <button id="btn-add-weapon-db"
+                        style="width:50px; padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+                </div>
+                <div id="db-weapons-list"
+                    style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; background: white; border-radius: 4px; margin-bottom: 10px;">
+                    <!-- Список зброї буде тут -->
+                </div>
+            </div>
+        </div>
+        <!-- Подключаем главный JS как модуль -->
+        <script type="module" src="js/app.js"></script>
 </body>
 
 </html>

@@ -55,8 +55,11 @@ export function getTargets() {
             console.error("Помилка парсингу localStorage", e);
         }
     }
-    saveTargets(BASE_TARGETS);
-    return BASE_TARGETS;
+    // Повертаємо копію базового списку, щоб подальші push/sort
+    // не мутували сам масив BASE_TARGETS у пам'яті
+    const initial = [...BASE_TARGETS];
+    saveTargets(initial);
+    return initial;
 }
 /**
  * Сохраняет массив целей в localStorage
@@ -121,8 +124,13 @@ export function getWeaponsData() {
             console.error("Помилка парсингу localStorage для зброї", e);
         }
     }
-    saveWeaponsData(BASE_WEAPONS);
-    return BASE_WEAPONS;
+    // Повертаємо глибоку копію базового довідника, щоб подальші
+    // мутації (додавання/видалення БК) не псували саму константу BASE_WEAPONS
+    const initial = Object.fromEntries(
+        Object.entries(BASE_WEAPONS).map(([weapon, ammoList]) => [weapon, [...ammoList]])
+    );
+    saveWeaponsData(initial);
+    return initial;
 }
 
 export function saveWeaponsData(weaponsObj) {
