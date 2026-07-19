@@ -65,7 +65,32 @@ export class Compass {
             inputEl.value = this.currentAzimuth;
             inputEl.style.backgroundColor = ''; // Прибираємо підсвітку
             this._updateButtonUI(buttonEl, 'fixed', labelText);
+
+            // Якщо жодне з полів більше не сканує — зупиняємо датчики повністю,
+            // щоб не витрачати батарею і не отримувати зайві оновлення
+            if (!this._hasActiveScanning()) {
+                this._stopSensors();
+            }
         }
+    }
+
+    // Чи сканує зараз хоч одне з полів (виявлення або курс)
+    _hasActiveScanning() {
+        return this.states.detect === 'scanning' || this.states.course === 'scanning';
+    }
+
+    // Зупинка датчиків орієнтації: знімаємо слухачі й скидаємо прапорець активності
+    _stopSensors() {
+        if (!this.isSensorActive) return;
+
+        if (this.deviceOrientationHandler) {
+            window.removeEventListener('deviceorientation', this.deviceOrientationHandler, true);
+        }
+        if (this.deviceOrientationAbsoluteHandler) {
+            window.removeEventListener('deviceorientationabsolute', this.deviceOrientationAbsoluteHandler, true);
+        }
+
+        this.isSensorActive = false;
     }
 
     // Запуск системних датчиків орієнтації
