@@ -1,15 +1,37 @@
 {
   "short_name": "ППО СМС",
   "name": "ППО СМС мобільний звіт",
+  "description": "Формування текстових звітів спостережного поста ППО",
+  "id": "./index.html",
+  "lang": "uk",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3067/3067341.png",
+      "src": "icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192-maskable.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "./index.html",
+  "scope": "./",
   "background_color": "#2c3e50",
   "theme_color": "#2c3e50",
   "display": "standalone",

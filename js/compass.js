@@ -155,18 +155,19 @@ export class Compass {
         }
     }
 
-    // ДОПРАЦЮВАНО ТІЛЬКИ ТУТ: Стрімінг даних в реальному часі
+    // Стрімінг даних в реальному часі під час сканування
     _streamToActiveInputs(azimuth, isRelative) {
         const suffix = isRelative ? '° (відн.)' : '°';
 
-        // Якщо кнопка перейшла в режим сканування, але інпут ще пустий —
-        // або якщо дані просто оновлюються в реальному часі:
+        // Якщо кнопка перейшла в режим сканування — оновлюємо відповідний інпут.
+        // Пишемо саме число (без суфіксу), бо поля мають type="number" —
+        // рядок з "°" браузер просто відхилить як невалідне значення.
         if (this.states.detect === 'scanning' && this.inputDetect) {
-            this.inputDetect.value = `${azimuth}${suffix}`;
+            this.inputDetect.value = this.getCurrentAzimuth();
         }
 
         if (this.states.course === 'scanning' && this.inputCourse) {
-            this.inputCourse.value = `${azimuth}${suffix}`;
+            this.inputCourse.value = this.getCurrentAzimuth();
         }
 
         // Якщо старий загальний дисплей все ще потрібен в HTML — оновлюємо і його
@@ -174,6 +175,11 @@ export class Compass {
             this.display.textContent = `${azimuth}°`;
             this.display.style.color = isRelative ? '#f39c12' : '#27ae60';
         }
+    }
+
+    // Метод для отримання поточного азимуту
+    getCurrentAzimuth() {
+        return this.currentAzimuth;
     }
 
     // Динамічна зміна кольору та тексту кнопок залежно від стану (КОД ПОВНІСТЮ ВАШ)

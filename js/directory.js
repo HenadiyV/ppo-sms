@@ -1,43 +1,114 @@
 // Базовый (заводской) список целей
 const BASE_TARGETS = [
-    "БпЛА типу Гербера",
-    "Гелікоптер",
-    "БпЛА типу Зала",
-    "Зонд",
-    "БпЛА типу Молнія",
-    "Квадрокоптер",
-    "БпЛА типу Невизначений",
-    "Крилата Ракета",
-    "БпЛА типу Орлан",
-    "Літак Великий",
-    "БпЛА типу реактивний Шахед",
-    "Літак Малий",
-    "БпЛА типу Суперкам",
-    "Постріли",
-    "БпЛА типу ШАХЕД",
-    "Робота суміжних підрозділів",
-    "Вибух",
-    "Спалах в небі",
-    "Вибух на землі",
-    "FPV-дрон",
-    "Виходи"
+  "БпЛА типу Гербера",
+  "Гелікоптер",
+  "БпЛА типу Зала",
+  "Зонд",
+  "БпЛА типу Молнія",
+  "Квадрокоптер",
+  "БпЛА типу Невизначений",
+  "Крилата Ракета",
+  "БпЛА типу Орлан",
+  "Літак Великий",
+  "БпЛА типу реактивний Шахед",
+  "Літак Малий",
+  "БпЛА типу Суперкам",
+  "БпЛА типу ШАХЕД",
+  "Робота суміжних підрозділів",
+  "FPV-дрон"
+];
+
+const BASE_ACTIVE = [
+  "Постріли",
+  "Робота суміжних підрозділів",
+  "Вибух",
+  "Спалах в небі",
+  "Вибух на землі",
+  "Виходи",
+  "Наші на вихід",
+  "Наші повертаються"
 ];
 
 // Базовий довідник зброї та відповідних боєприпасів
 const BASE_WEAPONS = {
-    "ПЗРК Stinger": ["FIM-92A", "FIM-92C", "FIM-92E"],
-    "ПЗРК Голка (Игла)": ["9М39", "9М313"],
-    "ПЗРК Перун (Piorun)": ["Перун"],
-    "ПЗРК Стрела-3": ["9М36"],
-    "ЗУ-23-2": ["23-мм снаряд ОФЗ", "23-мм снаряд БЗТ"],
-    "Кулемет Браунінг (M2)": ["12.7x99 mm NATO"],
-    "Кулемет ДШК": ["12.7x108 мм"],
-    "Стрелецька зброя (АК-74)": ["5.45x39 мм"],
-    "Стрелецька зброя (ПКМ)": ["7.62x54 ммR"]
+  "ПЗРК Stinger": ["FIM-92A", "FIM-92C", "FIM-92E"],
+  "ПЗРК Голка (Игла)": ["9М39", "9М313"],
+  "ПЗРК Перун (Piorun)": ["Перун"],
+  "ПЗРК Стрела-3": ["9М36"],
+  "ЗУ-23-2": ["23-мм снаряд ОФЗ", "23-мм снаряд БЗТ"],
+  "Кулемет Браунінг (M2)": ["12.7x99 mm NATO"],
+  "Кулемет ДШК": ["12.7x108 мм"],
+  "Стрелецька зброя (АК-74)": ["5.45x39 мм"],
+  "Стрелецька зброя (ПКМ)": ["7.62x54 ммR"]
 };
 
 const STORAGE_KEY = 'ppo_targets_directory';
 const WEAPONS_KEY = 'ppo_weapons_directory';
+const ACTIVE_KEY = 'ppo_active_directory';
+
+/*Робота з активністю*/
+
+export function getActiveData() {
+  const stored = localStorage.getItem(ACTIVE_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      console.error("Помилка парсингу localStorage", e);
+    }
+  }
+  // Повертаємо копію базового списку, щоб подальші push/sort
+  // не мутували сам масив BASE_ACTIVE у пам'яті
+  const initial = [...BASE_ACTIVE];
+  saveActiveData(initial);
+  return initial;
+}
+
+export function saveActiveData(activeArray) {
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify(activeArray));
+}
+
+export function addActiveData(newActive) {
+  const trimmed = newActive.trim();
+  if (!trimmed) return false;
+
+  const currentActive = getActiveData();
+
+  // Проверка дубликатов без учета регистра
+  const exists = currentActive.some(a => a.toLowerCase() === trimmed.toLowerCase());
+  if (exists) {
+    return false; // Уже существует
+  }
+
+  currentActive.push(trimmed);
+  currentActive.sort((a, b) => a.localeCompare(b, 'uk'));
+
+  saveActiveData(currentActive);
+  return true;
+}
+
+export function updateActiveData(oldValue, newValue) {
+  const trimmed = newValue.trim();
+  if (!trimmed) return false;
+  let current = getActiveData();
+  const index = current.indexOf(oldValue);
+  if (index !== -1) {
+    current[index] = trimmed;
+    current.sort((a, b) => a.localeCompare(b, 'uk'));
+    saveActiveData(current);
+    return true;
+  }
+  return false;
+}
+
+export function deleteActiveData(activeValue) {
+  let current = getActiveData();
+  const filtered = current.filter(a => a !== activeValue);
+  saveActiveData(filtered);
+  return true;
+}
+
 
 /* --- РОБОТА З ЦІЛЯМИ --- */
 
@@ -46,46 +117,46 @@ const WEAPONS_KEY = 'ppo_weapons_directory';
  * Если его там нет, сохраняет базовый список и возвращает его.
  */
 export function getTargets() {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) return parsed;
-        } catch (e) {
-            console.error("Помилка парсингу localStorage", e);
-        }
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      console.error("Помилка парсингу localStorage", e);
     }
-    // Повертаємо копію базового списку, щоб подальші push/sort
-    // не мутували сам масив BASE_TARGETS у пам'яті
-    const initial = [...BASE_TARGETS];
-    saveTargets(initial);
-    return initial;
+  }
+  // Повертаємо копію базового списку, щоб подальші push/sort
+  // не мутували сам масив BASE_TARGETS у пам'яті
+  const initial = [...BASE_TARGETS];
+  saveTargets(initial);
+  return initial;
 }
 /**
  * Сохраняет массив целей в localStorage
  * Добавляет новую цель в список, если её там еще нет
  */
 export function saveTargets(targetsArray) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(targetsArray));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(targetsArray));
 }
 
 export function addTarget(newTarget) {
-    const trimmed = newTarget.trim();
-    if (!trimmed) return false;
+  const trimmed = newTarget.trim();
+  if (!trimmed) return false;
 
-    const currentTargets = getTargets();
+  const currentTargets = getTargets();
 
-    // Проверка дубликатов без учета регистра
-    const exists = currentTargets.some(t => t.toLowerCase() === trimmed.toLowerCase());
-    if (exists) {
-        return false; // Уже существует
-    }
+  // Проверка дубликатов без учета регистра
+  const exists = currentTargets.some(t => t.toLowerCase() === trimmed.toLowerCase());
+  if (exists) {
+    return false; // Уже существует
+  }
 
-    currentTargets.push(trimmed);
-    currentTargets.sort((a, b) => a.localeCompare(b, 'uk'));
+  currentTargets.push(trimmed);
+  currentTargets.sort((a, b) => a.localeCompare(b, 'uk'));
 
-    saveTargets(currentTargets);
-    return true;
+  saveTargets(currentTargets);
+  return true;
 }
 
 /* --- РЕДАКТУВАННЯ ТА ВИДАЛЕННЯ ЦІЛЕЙ --- */
@@ -115,60 +186,60 @@ export function deleteTarget(targetValue) {
 
 /* --- РОБОТА ЗІ ЗБРОЄЮ ТА БОЄПРИПАСАМИ --- */
 export function getWeaponsData() {
-    const stored = localStorage.getItem(WEAPONS_KEY);
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            if (parsed && typeof parsed === 'object') return parsed;
-        } catch (e) {
-            console.error("Помилка парсингу localStorage для зброї", e);
-        }
+  const stored = localStorage.getItem(WEAPONS_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch (e) {
+      console.error("Помилка парсингу localStorage для зброї", e);
     }
-    // Повертаємо глибоку копію базового довідника, щоб подальші
-    // мутації (додавання/видалення БК) не псували саму константу BASE_WEAPONS
-    const initial = Object.fromEntries(
-        Object.entries(BASE_WEAPONS).map(([weapon, ammoList]) => [weapon, [...ammoList]])
-    );
-    saveWeaponsData(initial);
-    return initial;
+  }
+  // Повертаємо глибоку копію базового довідника, щоб подальші
+  // мутації (додавання/видалення БК) не псували саму константу BASE_WEAPONS
+  const initial = Object.fromEntries(
+    Object.entries(BASE_WEAPONS).map(([weapon, ammoList]) => [weapon, [...ammoList]])
+  );
+  saveWeaponsData(initial);
+  return initial;
 }
 
 export function saveWeaponsData(weaponsObj) {
-    localStorage.setItem(WEAPONS_KEY, JSON.stringify(weaponsObj));
+  localStorage.setItem(WEAPONS_KEY, JSON.stringify(weaponsObj));
 }
 
 // Додати нову одиницю зброї
 export function addWeapon(weaponName) {
-    const trimmed = weaponName.trim();
-    if (!trimmed) return false;
-    const data = getWeaponsData();
+  const trimmed = weaponName.trim();
+  if (!trimmed) return false;
+  const data = getWeaponsData();
 
-    // Перевірка без урахування регістру
-    const exists = Object.keys(data).some(k => k.toLowerCase() === trimmed.toLowerCase());
-    if (exists) return false;
+  // Перевірка без урахування регістру
+  const exists = Object.keys(data).some(k => k.toLowerCase() === trimmed.toLowerCase());
+  if (exists) return false;
 
-    data[trimmed] = []; // Створюємо зброю з порожнім списком боєприпасів
-    saveWeaponsData(data);
-    return true;
+  data[trimmed] = []; // Створюємо зброю з порожнім списком боєприпасів
+  saveWeaponsData(data);
+  return true;
 }
 
 // Додати боєприпас до існуючої зброї
 export function addAmmoToWeapon(weaponName, ammoName) {
-    const trimmedAmmo = ammoName.trim();
-    if (!trimmedAmmo) return false;
-    const data = getWeaponsData();
+  const trimmedAmmo = ammoName.trim();
+  if (!trimmedAmmo) return false;
+  const data = getWeaponsData();
 
-    if (!data[weaponName]) {
-        data[weaponName] = [];
-    }
+  if (!data[weaponName]) {
+    data[weaponName] = [];
+  }
 
-    const exists = data[weaponName].some(a => a.toLowerCase() === trimmedAmmo.toLowerCase());
-    if (exists) return false;
+  const exists = data[weaponName].some(a => a.toLowerCase() === trimmedAmmo.toLowerCase());
+  if (exists) return false;
 
-    data[weaponName].push(trimmedAmmo);
-    data[weaponName].sort((a, b) => a.localeCompare(b, 'uk'));
-    saveWeaponsData(data);
-    return true;
+  data[weaponName].push(trimmedAmmo);
+  data[weaponName].sort((a, b) => a.localeCompare(b, 'uk'));
+  saveWeaponsData(data);
+  return true;
 }
 
 /* --- РЕДАКТУВАННЯ ТА ВИДАЛЕННЯ ЗБРОЇ ТА БОЄПРИПАСІВ --- */

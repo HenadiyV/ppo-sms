@@ -1,16 +1,19 @@
-import { 
+import {
   getTargets, addTarget, updateTarget, deleteTarget,
   getWeaponsData, addWeapon, updateWeapon, deleteWeapon,
-  addAmmoToWeapon, updateAmmo, deleteAmmo 
+  addAmmoToWeapon, updateAmmo, deleteAmmo
 } from './directory.js';
+import { getActiveData, addActiveData, updateActiveData, deleteActiveData } from './directory.js';
 
 export class DbEditor {
   constructor() {
     // Вкладки
     this.tabTargets = document.getElementById('tab-edit-targets');
     this.tabWeapons = document.getElementById('tab-edit-weapons');
+    this.tabActive = document.getElementById('tab-edit-active');
     this.panelTargets = document.getElementById('panel-targets');
     this.panelWeapons = document.getElementById('panel-weapons');
+    this.panelActive = document.getElementById('panel-active');
 
     // Элементы целей
     this.newTargetInput = document.getElementById('new-target-db-input');
@@ -22,6 +25,15 @@ export class DbEditor {
     this.btnAddWeapon = document.getElementById('btn-add-weapon-db');
     this.weaponsListContainer = document.getElementById('db-weapons-list');
 
+    //Элементы активности
+    //btn-add-active
+    //btn-edit-active
+    //btn-delete-active
+    this.newActiveInput = document.getElementById('new-active-db-input');
+    this.btnAddActive = document.getElementById('btn-add-active');
+    this.btnEditActive = document.getElementById('btn-edit-active');
+    this.btnDeleteActive = document.getElementById('btn-delete-active');
+    this.activeListContainer = document.getElementById('db-active-list');
     this.init();
   }
 
@@ -29,10 +41,74 @@ export class DbEditor {
     this._initTabs();
     this._initTargetEvents();
     this._initWeaponEvents();
+    this._initActiveEvents();
 
     // Первичный рендер
     this.renderTargets();
     this.renderWeapons();
+    this.renderActive();
+    this._triggerGlobalUpdate();
+
+  }
+
+  _initActiveEvents() {
+    this.btnAddActive.addEventListener('click', () => {
+      const val = this.newActiveInput.value.trim();
+      if (val) {
+        addActiveData(val);
+        this.newActiveInput.value = '';
+        this.renderActive();
+        this._triggerGlobalUpdate();
+      }
+    });
+  }
+
+  renderActive() {
+    const actives = getActiveData();
+    this.activeListContainer.innerHTML = '';
+
+    actives.forEach(active => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee;';
+
+      const label = document.createElement('span');
+      label.textContent = active;
+
+      const actions = document.createElement('div');
+      actions.style.display = 'flex';
+      actions.style.gap = '5px';
+
+      // Кнопка редактирования
+      const btnEdit = document.createElement('button');
+      btnEdit.textContent = '✏️';
+      btnEdit.style.cssText = 'border: none; background: transparent; cursor: pointer; padding: 3px;';
+      btnEdit.addEventListener('click', () => {
+        const newValue = prompt(`Редагувати активність "${active}":`, active);
+        if (newValue && newValue.trim() !== active) {
+          updateActiveData(active, newValue);
+          this.renderActive();
+          this._triggerGlobalUpdate();
+        }
+      });
+
+      // Кнопка удаления
+      const btnDel = document.createElement('button');
+      btnDel.textContent = '❌';
+      btnDel.style.cssText = 'border: none; background: transparent; cursor: pointer; padding: 3px;';
+      btnDel.addEventListener('click', () => {
+        if (confirm(`Ви дійсно хочете видалити активність "${active}"?`)) {
+          deleteActiveData(active);
+          this.renderActive();
+          this._triggerGlobalUpdate();
+        }
+      });
+
+      actions.appendChild(btnEdit);
+      actions.appendChild(btnDel);
+      row.appendChild(label);
+      row.appendChild(actions);
+      this.activeListContainer.appendChild(row);
+    });
   }
 
   // Переключение вкладок "Цили" и "Зброя"
@@ -44,6 +120,8 @@ export class DbEditor {
       this.tabTargets.style.color = 'white';
       this.tabWeapons.style.background = '#bdc3c7';
       this.tabWeapons.style.color = '#333';
+      this.tabActive.style.background = '#bdc3c7';
+      this.tabActive.style.color = '#333';
     });
 
     this.tabWeapons.addEventListener('click', () => {
@@ -53,6 +131,19 @@ export class DbEditor {
       this.tabWeapons.style.color = 'white';
       this.tabTargets.style.background = '#bdc3c7';
       this.tabTargets.style.color = '#333';
+      this.tabActive.style.background = '#bdc3c7';
+      this.tabActive.style.color = '#333';
+    });
+    this.tabActive.addEventListener('click', () => {
+      this.panelTargets.style.display = 'none';
+      this.panelWeapons.style.display = 'none';
+      this.panelActive.style.display = 'block';
+      this.tabActive.style.background = '#3498db';
+      this.tabActive.style.color = 'white';
+      this.tabTargets.style.background = '#bdc3c7';
+      this.tabTargets.style.color = '#333';
+      this.tabWeapons.style.background = '#bdc3c7';
+      this.tabWeapons.style.color = '#333';
     });
   }
 
@@ -142,12 +233,12 @@ export class DbEditor {
       // Строка оружия
       const header = document.createElement('div');
       header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-weight: bold; color: #2c3e50;';
-      
+
       const titleSpan = document.createElement('span');
       titleSpan.textContent = `⚔️ ${weapon}`;
 
       const weaponActions = document.createElement('div');
-      
+
       const btnEditW = document.createElement('button');
       btnEditW.textContent = '✏️';
       btnEditW.style.cssText = 'border: none; background: transparent; cursor: pointer; margin-right: 5px;';
@@ -185,12 +276,12 @@ export class DbEditor {
       ammoList.forEach(ammo => {
         const li = document.createElement('li');
         li.style.cssText = 'margin-bottom: 3px; display: flex; justify-content: space-between; max-width: 90%;';
-        
+
         const ammoSpan = document.createElement('span');
         ammoSpan.textContent = ammo;
 
         const ammoActions = document.createElement('span');
-        
+
         // Редактировать БК
         const btnEditA = document.createElement('span');
         btnEditA.textContent = ' ✏️';
@@ -228,7 +319,7 @@ export class DbEditor {
       // Кнопка быстрого добавления БК к этому оружию
       const addAmmoRow = document.createElement('div');
       addAmmoRow.style.cssText = 'display: flex; gap: 5px; margin-top: 5px;';
-      
+
       const ammoInput = document.createElement('input');
       ammoInput.placeholder = 'Додати боєприпас...';
       ammoInput.style.cssText = 'flex: 1; font-size: 11px; padding: 3px; border: 1px solid #ccc; border-radius: 3px;';

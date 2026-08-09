@@ -8,26 +8,52 @@
  * @param {boolean} data.isDestroyed - Чи збита ціль
  * @param {string} data.azimuthDetect - Азимут виявлення
  * @param {string} data.azimuthCourse - Азимут курсу (руху)
- * @param {string} data.weapon - Використана зброя (опціонально)
- * @param {string} data.ammo - Використаний боєприпас (опціонально)
+ * @param {Array<{weapon: string, ammo: string, countAmmo: string}>} data.weaponsUsed - Список застосованого озброєння (опціонально, може містити декілька видів)
  */
 export function generateReportText(data) {
-   
-    let report = `${data.time} ${data.date} ${data.position || "Не вказано"}\n`;
-    report += `Тип цілі: ${data.target || "Не визначено"}\n`;
-    report += `№ ${data.targetNumber || "Не вказано"}\n`;
-    report += `Кількість: ${data.targetCount || "Не вказано"}\n`;
-    report += `${data.detection || "Не вказано"}\n`;
-    report += `(А-${data.azimuthDetect ? data.azimuthDetect + '°' : 'не вказано'} К-${data.azimuthCourse ? data.azimuthCourse + '°' : 'не вказано'})\n`;
-    report += `${data.isDestroyed || "Не вказано"}\n`;
 
-    // Додаємо блок зброї, якщо вона була обрана
-    if (data.weapon) {
-        report += `Витрати БК: ${data.weapon}\n`;
-        const ammoLabel = (data.ammo && data.ammo !== "Не вказано") ? data.ammo : "Не вказано";
-        const countLabel = data.countAmmo || "Не вказано";
-        report += `${ammoLabel} Кількість: ${countLabel} шт.\n`;
+    let report = `${data.time} ${data.date} ${data.position || "Не вказано"}\n`;
+    if (data.otherActive) {
+        report += `${data.otherActive}\n`;
+        report += course(data) ? course(data) + '\n' : '';
+        report += data.targetDistanceOther ? `Дальність: ${data.targetDistanceOther} км\n` : '';
+    } else {
+        report += `Тип цілі: ${data.target || "Не визначено"}\n`;
+        report += `Номер цілі: № ${data.targetNumber || "Не вказано"}\n`;
+        report += `Кількість: ${data.targetCount || "Не вказано"}\n`;
+        report += `${data.detection || "Виявлення цілі не вказано"}\n`;
+        report += course(data) ? course(data) + '\n' : '';
+        report += targetedTraining(data) ? `${data.isDestroyed}` + '\n' : '';
+        // Додаємо блок зброї — може містити декілька видів озброєння в одному звіті
+        if (Array.isArray(data.weaponsUsed) && data.weaponsUsed.length > 0) {
+            report += `Витрати БК:\n`;
+            data.weaponsUsed.forEach(entry => {
+                if (!entry.weapon) return;
+                report += `${entry.weapon} - `;
+                const ammoLabel = (entry.ammo && entry.ammo !== "Не вказано") ? entry.ammo : "Не вказано";
+                const countLabel = entry.countAmmo || "Не вказано";
+                report += `${ammoLabel} Кількість: ${countLabel} шт.\n`;
+            });
+        }
     }
 
     return report;
+}
+
+function course(data) {
+    const parts = [];
+    if (data.azimuthDetect) parts.push(`A-${data.azimuthDetect}°`);
+    if (data.azimuthCourse) parts.push(`K-${data.azimuthCourse}°`);
+    if (data.targetHight) parts.push(`H-${data.targetHight}м`);
+    if (data.targetDistance) parts.push(`D-${data.targetDistance}км`);
+
+    if (parts.length === 0) return null;
+    return `(${parts.join(' ')})`;
+}
+
+function targetedTraining(data) {
+    if (data.detection === "Ціль акустично та візуально не виявленно") {
+        return null;
+    }
+    return data.isDestroyed;
 }

@@ -1,5 +1,5 @@
 // Меняем версию кэша, чтобы заставить браузер обновиться
-const CACHE_NAME = 'ppo-app-cache-v4';
+const CACHE_NAME = 'ppo-app-cache-v7';
 
 const ASSETS = [
     './',
@@ -11,8 +11,14 @@ const ASSETS = [
     './js/directory.js',
     './js/targetSearch.js',
     './js/weaponManager.js',
+    './js/activeManager.js',
     './js/dbEditor.js',
-    './js/config.js'
+    './js/config.js',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './icons/icon-192-maskable.png',
+    './icons/icon-512-maskable.png',
+    './icons/apple-touch-icon.png'
 ];
 
 // Установка: кэшируем новые файлы
