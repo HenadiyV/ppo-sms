@@ -5,6 +5,7 @@ import { WeaponManager } from './weaponManager.js';
 import { ActiveManager } from './activeManager.js';
 import { DbEditor } from './dbEditor.js';
 import { CONFIG } from './config.js';
+import { latLonToMgrs } from './mgrs.js';
 const NAME_POSITION = 'name_position';
 let weaponManager = null;
 // Перехоплювач помилок JS для зручного тестування на телефоні
@@ -100,11 +101,89 @@ document.getElementById('detection-select').addEventListener('change', () => {
 document.getElementById('active-select').addEventListener('change', () => {
     const active = document.getElementById('active-select').value;
     document.getElementById('report-place').style.display = active ? 'none' : 'block';
-    document.getElementById('distance').style.display = active ? 'block' : 'none';
 });
 
 document.getElementById('btn-clear-weapons-list').addEventListener('click', () => {
     if (weaponManager) weaponManager.clearWeaponsUsed();
+});
+
+// Визначення поточної геолокації та додавання координат до поля "Позиція"
+document.getElementById('btn-get-location').addEventListener('click', () => {
+    const btn = document.getElementById('btn-get-location');
+
+    if (!navigator.geolocation) {
+        showToast('Геолокація не підтримується цим браузером');
+        return;
+    }
+
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Визначення...';
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            btn.disabled = false;
+            btn.textContent = originalText;
+
+            const lat = pos.coords.latitude.toFixed(6);
+            const lng = pos.coords.longitude.toFixed(6);
+            const accuracy = Math.round(pos.coords.accuracy);
+            const isLowAccuracy = accuracy > 50;
+            const warningMark = isLowAccuracy ? ' ⚠️ низька точність' : '';
+
+            const mgrs = latLonToMgrs(pos.coords.latitude, pos.coords.longitude, 5);
+            const mgrsLine = mgrs ? `${mgrs}` : ''; // `MGRS ${mgrs}` : '';
+
+            const coordsLine = [
+                `${lat}, ${lng} (точність ±${accuracy}м${warningMark})`,
+                mgrsLine
+            ].filter(Boolean).join('\n');
+
+            // const positionField = document.getElementById('position');
+            // positionField.value = positionField.value.trim()
+            //     ? `${positionField.value.trim()}\n${coordsLine}`
+            //     : coordsLine;
+            const positionField = document.getElementById('coordinates');
+            positionField.value = mgrsLine;
+
+            //localStorage.setItem(NAME_POSITION, positionField.value);
+
+            const warningEl = document.getElementById('position-accuracy-warning');
+            if (isLowAccuracy) {
+                showToast(`⚠️ Низька точність (±${accuracy}м). Перевірте GPS і дозвіл "Точне місцезнаходження"`, 4000);
+                if (warningEl) {
+                    warningEl.textContent = `⚠️ Останнє визначення неточне: ±${accuracy}м. Спробуйте на відкритому просторі з увімкненим GPS.`;
+                    warningEl.style.display = 'block';
+                }
+            } else {
+                showToast('Координати додано');
+                if (warningEl) warningEl.style.display = 'none';
+            }
+        },
+        (error) => {
+            btn.disabled = false;
+            btn.textContent = originalText;
+
+            let message = 'Не вдалося визначити місцезнаходження';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    message = 'Доступ до геолокації відхилено. Дозвольте в налаштуваннях браузера';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = 'Місцезнаходження недоступне (немає сигналу GPS)';
+                    break;
+                case error.TIMEOUT:
+                    message = 'Час очікування вичерпано, спробуйте ще раз';
+                    break;
+            }
+            showToast(message);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
 });
 
 // Генерація звіту
@@ -138,7 +217,6 @@ document.getElementById('generate-btn').addEventListener('click', (e) => {
     const rawAzimuthDetect = document.getElementById('azimuth-detect').value;
     const rawAzimuthCourse = document.getElementById('azimuth-course').value;
     const otherActive = document.getElementById('active-select').value;
-    const targetDistanceOther = document.getElementById('target-distance-other').value;
 
     // Очищаем строки: оставляем только цифры с помощью регулярного выражения
     const azimuthDetect = rawAzimuthDetect.replace(/\D/g, '');
@@ -158,8 +236,7 @@ document.getElementById('generate-btn').addEventListener('click', (e) => {
         azimuthDetect,
         azimuthCourse,
         weaponsUsed,
-        otherActive,
-        targetDistanceOther
+        otherActive
     });
 
     document.getElementById('report-output').value = report;
@@ -175,7 +252,7 @@ function savePosition(position) {
 }
 
 // Невеличке спливаюче повідомлення (наприклад "Скопійовано!")
-function showToast(message) {
+function showToast(message, duration = 2000) {
     const toast = document.getElementById('toast');
     if (!toast) return;
     toast.textContent = message;
@@ -183,7 +260,7 @@ function showToast(message) {
     clearTimeout(showToast._timer);
     showToast._timer = setTimeout(() => {
         toast.classList.remove('show');
-    }, 2000);
+    }, duration);
 }
 
 // Копіювання готового тексту звіту в буфер обміну

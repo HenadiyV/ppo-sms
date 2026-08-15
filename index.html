@@ -232,7 +232,22 @@
         <div class="form-group">
             <label for="position">Позиція:</label>
             <textarea id="position" placeholder="Вкажить назву позиції" style="width: 100%;"></textarea>
+
+            <div class="form-group" style="margin-bottom: 15px;"><label for="coordinates">Кординати:</label>
+                <div class="azimuth-row">
+
+                    <input id="coordinates" style="width: 50%;"></input>
+                    <button id="btn-get-location" type="button" style="background-color: #2980b9; margin-top: 8px;">
+                        📍 Визначити
+                    </button>
+                </div>
+                <div id="position-accuracy-warning"
+                    style="display: none; color: #e67e22; font-size: 13px; margin-top: 6px; font-weight: bold;">
+                </div>
+
+            </div>
         </div>
+
         <div class="form-group">
             <label for="active-select">Інша активність:</label>
             <select id="active-select">
@@ -270,10 +285,7 @@
                 </div>
             </div>
         </div>
-        <div class="form-group" id="distance" style="display:none">
-                <label for="target-distance-other">Дальність(км):</label>
-                <input type="number" id="target-distance-other">
-        </div>
+
         <div id="report-place">
             <div class="form-group"
                 style="background: #fcfcfc; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;">
@@ -296,7 +308,7 @@
                     <input type="number" id="target-height">
                 </div>
 
-                <div class="form-group" >
+                <div class="form-group">
                     <label for="target-distance">Дальність(км):</label>
                     <input type="number" id="target-distance">
                 </div>
@@ -390,7 +402,8 @@
                         </label>
                     </div>
 
-                    <button id="btn-add-weapon-entry" type="button" style="background-color: #16a085; margin-bottom: 10px;">
+                    <button id="btn-add-weapon-entry" type="button"
+                        style="background-color: #16a085; margin-bottom: 10px;">
                         ➕ Додати зброю до звіту
                     </button>
 
@@ -405,18 +418,18 @@
                 </div>
             </div>
         </div>
-            <button id="generate-btn">Сформувати звіт</button>
+        <button id="generate-btn">Сформувати звіт</button>
 
-            <div class="form-group" style="margin-top: 20px;">
-                <label for="report-output">Готовий звіт:</label>
-                <textarea id="report-output" readonly rows="5" style="width: 100%; font-family: monospace;"></textarea>
-                <div class="report-actions">
-                    <button id="btn-copy-report" type="button">📋 Копіювати</button>
-                    <button id="btn-share-report" type="button">📤 Поділитись</button>
-                </div>
+        <div class="form-group" style="margin-top: 20px;">
+            <label for="report-output">Готовий звіт:</label>
+            <textarea id="report-output" readonly rows="5" style="width: 100%; font-family: monospace;"></textarea>
+            <div class="report-actions">
+                <button id="btn-copy-report" type="button">📋 Копіювати</button>
+                <button id="btn-share-report" type="button">📤 Поділитись</button>
             </div>
-            <!-- </div> -->
-        
+        </div>
+        <!-- </div> -->
+
         <hr style="margin: 30px 0; border: 1px solid #ddd;">
 
         <!-- Секція Управління Справочниками -->

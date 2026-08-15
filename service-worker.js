@@ -1,5 +1,5 @@
 // Меняем версию кэша, чтобы заставить браузер обновиться
-const CACHE_NAME = 'ppo-app-cache-v7';
+const CACHE_NAME = 'ppo-app-cache-v10';
 
 const ASSETS = [
     './',
@@ -12,6 +12,7 @@ const ASSETS = [
     './js/targetSearch.js',
     './js/weaponManager.js',
     './js/activeManager.js',
+    './js/mgrs.js',
     './js/dbEditor.js',
     './js/config.js',
     './icons/icon-192.png',

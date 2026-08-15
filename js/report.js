@@ -16,7 +16,6 @@ export function generateReportText(data) {
     if (data.otherActive) {
         report += `${data.otherActive}\n`;
         report += course(data) ? course(data) + '\n' : '';
-        report += data.targetDistanceOther ? `Дальність: ${data.targetDistanceOther} км\n` : '';
     } else {
         report += `Тип цілі: ${data.target || "Не визначено"}\n`;
         report += `Номер цілі: № ${data.targetNumber || "Не вказано"}\n`;
@@ -26,10 +25,9 @@ export function generateReportText(data) {
         report += targetedTraining(data) ? `${data.isDestroyed}` + '\n' : '';
         // Додаємо блок зброї — може містити декілька видів озброєння в одному звіті
         if (Array.isArray(data.weaponsUsed) && data.weaponsUsed.length > 0) {
-            report += `Витрати БК:\n`;
             data.weaponsUsed.forEach(entry => {
                 if (!entry.weapon) return;
-                report += `${entry.weapon} - `;
+                report += `Витрати БК: ${entry.weapon}\n`;
                 const ammoLabel = (entry.ammo && entry.ammo !== "Не вказано") ? entry.ammo : "Не вказано";
                 const countLabel = entry.countAmmo || "Не вказано";
                 report += `${ammoLabel} Кількість: ${countLabel} шт.\n`;
